@@ -1,13 +1,10 @@
 package moe.icyr.tfc.anvil.calc;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
-import moe.icyr.tfc.anvil.calc.resource.Recipe;
+import moe.icyr.tfc.anvil.calc.resource.ResourceLocation;
 import moe.icyr.tfc.anvil.calc.resource.ResourceManager;
-import moe.icyr.tfc.anvil.calc.ui.MainFrame;
+import moe.icyr.tfc.anvil.calc.util.AssetsUtil;
 import moe.icyr.tfc.anvil.calc.util.JarUtil;
-import moe.icyr.tfc.anvil.calc.util.JsonUtil;
 import org.tomlj.Toml;
 import org.tomlj.TomlArray;
 import org.tomlj.TomlParseResult;
@@ -15,6 +12,8 @@ import org.tomlj.TomlParseResult;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
 /**
  * 资源包加载
@@ -25,8 +24,11 @@ import java.util.Map;
 @Slf4j
 public class AssetsLoader {
 
+    private static final Pattern onlyLoadTextureAndRecipe = Pattern.compile("^(assets/.*?/textures/.*|data/.*?/recipes/.*)$");
+
     public void load() {
-        File runLocation = new File(MainFrame.class.getProtectionDomain().getCodeSource().getLocation().getPath()).getParentFile().getAbsoluteFile();
+        // 散装Debug时为项目根路径，打包运行后为exe所在路径
+        File runLocation = new File(System.getProperty("user.dir")).getAbsoluteFile();
         log.debug("Application working directory: " + runLocation);
         File modsFolder = new File(runLocation, "mods");
         if (!modsFolder.exists()) {
@@ -62,10 +64,10 @@ public class AssetsLoader {
                         String modId = mods.getTable(0).getString("modId");
                         if ("tfc".equals(modId)) {
                             // 群峦本体
-                            loadTfc(mod);
+                            loadMods(mod, name -> name.startsWith("assets/tfc/textures/gui/") || name.startsWith("assets/tfc/textures/item/") || name.startsWith("data/tfc/recipes/anvil/"));
                         } else {
                             // 其他mod
-                            loadOtherMods(mod);
+                            loadMods(mod, name -> onlyLoadTextureAndRecipe.matcher(name).matches());
                         }
                     }
                 }
@@ -73,32 +75,26 @@ public class AssetsLoader {
         }
     }
 
-    private void loadTfc(File mod) {
-        Map<String, byte[]> tfcMod;
+    private void loadMods(File mod, Predicate<String> ifFileNeeded) {
+        Map<String, byte[]> modMod;
         try {
-            tfcMod = JarUtil.fullyLoadInMemory(mod, name -> name.startsWith("assets/tfc/textures/gui/") || name.startsWith("assets/tfc/textures/item/") || name.startsWith("data/tfc/recipes/anvil/"));
+            modMod = JarUtil.fullyLoadInMemory(mod, ifFileNeeded);
         } catch (IOException e) {
             log.error("Load mod file failed: " + mod.getPath(), e);
             return;
         }
-        for (Map.Entry<String, byte[]> entry : tfcMod.entrySet()) {
-            if (entry.getKey().startsWith("data/tfc/recipes/anvil/")) {
-                Recipe resourceRecipe;
-                try {
-                    resourceRecipe = JsonUtil.readResourceFromData("tfc", entry.getKey().substring(17, entry.getKey().length() - 5), entry.getValue(), Recipe.class);
-                } catch (Exception e) {
-                    log.error("Load resource error:", e);
-                    continue;
-                }
-                if (!ResourceManager.putResource(resourceRecipe)) {
-                    log.warn("Resource " + resourceRecipe + " can't use.");
-                }
-            } else if (entry.getKey().startsWith("assets/tfc/textures/")) {
+        for (Map.Entry<String, byte[]> entry : modMod.entrySet()) {
+            ResourceLocation resourceLocation;
+            try {
+                resourceLocation = AssetsUtil.readResourceFromData(entry.getKey(), entry.getValue());
+            } catch (Exception e) {
+                log.error("Load resource error:", e);
+                continue;
+            }
+            if (!ResourceManager.putResource(resourceLocation)) {
+                log.warn("Resource " + resourceLocation + " can't use.");
             }
         }
-    }
-
-    private void loadOtherMods(File mod) {
     }
 
 }

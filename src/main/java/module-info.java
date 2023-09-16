@@ -10,4 +10,8 @@ module moe.icyr.tfc.anvil.calc {
 
     opens moe.icyr.tfc.anvil.calc to javafx.fxml;
     exports moe.icyr.tfc.anvil.calc;
+    exports moe.icyr.tfc.anvil.calc.entity;
+    exports moe.icyr.tfc.anvil.calc.resource;
+    exports moe.icyr.tfc.anvil.calc.ui;
+    exports moe.icyr.tfc.anvil.calc.util;
 }

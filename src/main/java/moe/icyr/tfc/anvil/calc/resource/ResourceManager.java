@@ -1,6 +1,7 @@
 package moe.icyr.tfc.anvil.calc.resource;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -16,6 +17,7 @@ import java.util.function.Predicate;
  * @author Icy
  * @since 2023/9/14
  */
+@Slf4j
 public class ResourceManager {
 
     private static final Map<String, CopyOnWriteArrayList<ResourceLocation>> POOL = new ConcurrentHashMap<>();
@@ -39,7 +41,7 @@ public class ResourceManager {
      */
     public static @NonNull List<ResourceLocation> getResources(@NonNull String namespace, @NonNull Predicate<String> pathPredicate) {
         CopyOnWriteArrayList<ResourceLocation> resourceLocations = POOL.get(namespace);
-        if (resourceLocations == null) return null;
+        if (resourceLocations == null) return new ArrayList<>();
         List<ResourceLocation> collection = new ArrayList<>();
         Iterator<ResourceLocation> iterator = resourceLocations.stream().iterator();
         while (iterator.hasNext()) {
@@ -72,7 +74,7 @@ public class ResourceManager {
     }
 
     /**
-     * 存入资源对象至管理池
+     * 存入资源对象至管理池，不检测MC资源ID（命名空间:资源路径）重复，获取时会取第一个
      *
      * @param resourceLocation 资源对象
      * @return 资源存入成功与否
@@ -81,9 +83,14 @@ public class ResourceManager {
         if (resourceLocation == null || resourceLocation.getNamespace() == null || resourceLocation.getPath() == null)
             return false;
         if (POOL.containsKey(resourceLocation.getNamespace())) {
-            return POOL.get(resourceLocation.getNamespace()).add(resourceLocation);
+            POOL.get(resourceLocation.getNamespace()).add(resourceLocation);
+            log.debug("Resource " + resourceLocation.toResourceLocationStr() + resourceLocation + " loaded.");
+            return true;
         } else {
-            return null == POOL.putIfAbsent(resourceLocation.getNamespace(), new CopyOnWriteArrayList<>(List.of(resourceLocation)));
+            boolean success = null == POOL.putIfAbsent(resourceLocation.getNamespace(), new CopyOnWriteArrayList<>(List.of(resourceLocation)));
+            if (success)
+                log.debug("Resource " + resourceLocation.toResourceLocationStr() + resourceLocation + " loaded.");
+            return success;
         }
     }
 

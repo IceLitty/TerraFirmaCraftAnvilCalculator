@@ -12,8 +12,10 @@ public abstract class ResourceLocation {
     private String namespace;
     private String path;
 
-    @Override
-    public String toString() {
+    /**
+     * 获取Minecraft资源定义ID
+     */
+    public String toResourceLocationStr() {
         return namespace + ":" + path;
     }
 

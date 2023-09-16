@@ -18,6 +18,14 @@ import java.util.zip.ZipInputStream;
 @Slf4j
 public class JarUtil {
 
+    /**
+     * 读取单个文件
+     *
+     * @param jarFile      jar文件
+     * @param fileFullName 文件路径
+     * @return 字节数组
+     * @throws IOException IO异常
+     */
     public static byte[] readFileFromJar(@NonNull File jarFile, @NonNull String fileFullName) throws IOException {
         ByteArrayOutputStream os = null;
         try (ZipInputStream is = new ZipInputStream(new FileInputStream(jarFile), StandardCharsets.UTF_8)) {
@@ -40,6 +48,14 @@ public class JarUtil {
         return os.toByteArray();
     }
 
+    /**
+     * 加载进内存
+     *
+     * @param jarFile  jar文件
+     * @param contains 文件名筛选，若为NULL则不进行筛选
+     * @return Map<文件名, 字节数组>
+     * @throws IOException IO异常
+     */
     public static Map<String, byte[]> fullyLoadInMemory(@NonNull File jarFile, Predicate<String> contains) throws IOException {
         Map<String, byte[]> zip = new HashMap<>();
         try (ZipInputStream is = new ZipInputStream(new FileInputStream(jarFile), StandardCharsets.UTF_8)) {
