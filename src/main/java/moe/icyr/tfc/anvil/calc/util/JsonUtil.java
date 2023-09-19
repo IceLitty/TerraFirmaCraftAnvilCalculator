@@ -7,6 +7,7 @@ import com.fasterxml.jackson.core.json.JsonReadFeature;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -54,6 +55,8 @@ public class JsonUtil {
                 .setTimeZone(TimeZone.getTimeZone("GMT+8"))
                 // 防止double序列化为科学记数法
                 .registerModule(simpleModule)
+                // 引入jackson-java8-instant模块
+                .registerModule(new JavaTimeModule())
                 ;
     }
 
