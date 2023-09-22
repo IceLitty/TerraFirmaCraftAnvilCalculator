@@ -13,6 +13,21 @@ import java.awt.image.BufferedImage;
 @EqualsAndHashCode(callSuper = true)
 public class Texture extends ResourceLocation {
 
+    /**
+     * <p>材质类型</p>
+     * <ul>
+     *     <li>block</li>
+     *     <li>colormap</li>
+     *     <li>entity</li>
+     *     <li>gui</li>
+     *     <li>item</li>
+     *     <li>misc</li>
+     *     <li>mob_effect</li>
+     *     <li>models</li>
+     *     <li>painting</li>
+     *     <li>particle</li>
+     * </ul>
+     */
     private String textureType;
     private BufferedImage img;
 

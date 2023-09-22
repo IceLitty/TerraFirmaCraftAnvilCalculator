@@ -9,6 +9,7 @@ import lombok.Data;
 @Data
 public abstract class ResourceLocation {
 
+    private String originalPath;
     private String namespace;
     private String path;
 

@@ -31,7 +31,7 @@ public class ConfigUtil {
         }
         if (confFolder.exists() && confFolder.isDirectory() && confFolder.canRead()) {
             File configFile = new File(confFolder, "config.conf");
-            if (configFile.exists() && confFolder.isFile() && confFolder.canRead()) {
+            if (configFile.exists() && configFile.isFile() && configFile.canRead()) {
                 return JsonUtil.INSTANCE.readValue(configFile, Config.class);
             } else {
                 if (configFile.exists()) {

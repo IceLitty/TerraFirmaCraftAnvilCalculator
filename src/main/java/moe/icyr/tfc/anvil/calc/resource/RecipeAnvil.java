@@ -14,7 +14,7 @@ import java.util.List;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class Recipe extends ResourceLocation {
+public class RecipeAnvil extends ResourceLocation {
 
     @JsonProperty("__comment__")
     private String comment;
@@ -45,6 +45,7 @@ public class Recipe extends ResourceLocation {
     @AllArgsConstructor
     public static class Result {
         private String item;
+        private Integer count;
     }
 
 }

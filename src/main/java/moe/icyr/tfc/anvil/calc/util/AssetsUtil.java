@@ -3,8 +3,9 @@ package moe.icyr.tfc.anvil.calc.util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import moe.icyr.tfc.anvil.calc.resource.Recipe;
+import moe.icyr.tfc.anvil.calc.resource.RecipeAnvil;
 import moe.icyr.tfc.anvil.calc.resource.ResourceLocation;
+import moe.icyr.tfc.anvil.calc.resource.Tag;
 import moe.icyr.tfc.anvil.calc.resource.Texture;
 
 import javax.imageio.ImageIO;
@@ -29,8 +30,9 @@ public class AssetsUtil {
 
     private static final Pattern pathPattern = Pattern.compile("^(.+)\\..+$");
     private static final Map<Class<? extends ResourceLocation>, Pattern> resourcePathPattern = new HashMap<>() {{
-        put(Recipe.class, Pattern.compile("^data/.*?/recipes/.*$"));
         put(Texture.class, Pattern.compile("^assets/.*?/textures/.*$"));
+        put(RecipeAnvil.class, Pattern.compile("^data/.*?/recipes/.*$"));
+        put(Tag.class, Pattern.compile("^data/.*?/tags/.*$"));
     }};
 
     /**
@@ -43,7 +45,8 @@ public class AssetsUtil {
      * @throws Exception Just use log.error(e) to print stderr.
      */
     @SuppressWarnings("unchecked")
-    public static <T extends ResourceLocation> T readResourceFromData(@NonNull String resourcePath,
+    public static <T extends ResourceLocation> T readResourceFromData(@NonNull String fileName,
+                                                                      @NonNull String resourcePath,
                                                                       byte @NonNull [] resourceData) throws Exception {
         Class<T> anClass = null;
         for (Map.Entry<Class<? extends ResourceLocation>, Pattern> entry : resourcePathPattern.entrySet()) {
@@ -55,7 +58,7 @@ public class AssetsUtil {
         if (anClass == null) {
             throw new IllegalArgumentException("Can't parse resource path " + resourcePath + " to a defined resource type.");
         }
-        return readResourceFromData(resourcePath, resourceData, anClass);
+        return readResourceFromData(fileName, resourcePath, resourceData, anClass);
     }
 
     /**
@@ -68,12 +71,14 @@ public class AssetsUtil {
      * @return 资源对象
      * @throws Exception Just use log.error(e) to print stderr.
      */
-    public static <T extends ResourceLocation> T readResourceFromData(@NonNull String resourcePath,
+    public static <T extends ResourceLocation> T readResourceFromData(@NonNull String fileName,
+                                                                      @NonNull String resourcePath,
                                                                       byte @NonNull [] resourceData,
                                                                       @NonNull Class<T> resourceType) throws Exception {
         if (resourcePath.endsWith("/")) {
             throw new IllegalArgumentException("Can't parse directory to resource.");
         }
+        String originalPath = fileName + "!/" + resourcePath;
         // 解析文件路径前缀
         String namespace;
         String minecraftResourceType;
@@ -97,27 +102,39 @@ public class AssetsUtil {
             throw new IllegalArgumentException("Resource path can't resolve resource type: " + resourcePath);
         }
         minecraftResourceType = resourcePath.substring(0, firstPathSeparator);
-        resourcePath = resourcePath.substring(firstPathSeparator + 1); // TODO 验证下MC逻辑是否需要移除该层？
-        // TODO 也顺带验证下recipe的ID是否正确，可以通过tfc debug mc进行断点验证
-        // TODO 根据recipes里的路径来看，材质还需要移除一层，有专门的目录层级
-        String textureType = null;
+        resourcePath = resourcePath.substring(firstPathSeparator + 1);
+        String thirdType = null;
         if ("textures".equals(minecraftResourceType)) {
             firstPathSeparator = resourcePath.indexOf("/");
             if (firstPathSeparator == -1) {
                 throw new IllegalArgumentException("Resource path can't resolve resource type: " + resourcePath);
             }
-            textureType = resourcePath.substring(0, firstPathSeparator);
+            // block colormap entity gui item misc mob_effect models painting particle etc.
+            thirdType = resourcePath.substring(0, firstPathSeparator);
+            resourcePath = resourcePath.substring(firstPathSeparator + 1);
+        } else if ("tags".equals(minecraftResourceType)) {
+            firstPathSeparator = resourcePath.indexOf("/");
+            if (firstPathSeparator == -1) {
+                throw new IllegalArgumentException("Resource path can't resolve resource type: " + resourcePath);
+            }
+            // blocks entity_types fluids items worldgen etc.
+            thirdType = resourcePath.substring(0, firstPathSeparator);
             resourcePath = resourcePath.substring(firstPathSeparator + 1);
         }
+        // assets -> blockstates lang models particles sounds textures | data -> advancements loot_tables recipes structures tags worldgen
         // 验证资源类型
         switch (minecraftResourceType) {
             case "recipes" -> {
-                if (resourceType != Recipe.class)
-                    throw new IllegalArgumentException("Resource type " + minecraftResourceType + " can't matched with " + Recipe.class.getSimpleName() + " type!");
+                if (resourceType != RecipeAnvil.class)
+                    throw new IllegalArgumentException("Resource type " + minecraftResourceType + " can't matched with " + RecipeAnvil.class.getSimpleName() + " type!");
             }
             case "textures" -> {
                 if (resourceType != Texture.class)
                     throw new IllegalArgumentException("Resource type " + minecraftResourceType + " can't matched with " + Texture.class.getSimpleName() + " type!");
+            }
+            case "tags" -> {
+                if (resourceType != Tag.class)
+                    throw new IllegalArgumentException("Resource type " + minecraftResourceType + " can't matched with " + Tag.class.getSimpleName() + " type!");
             }
         }
         // 去除文件名后缀
@@ -125,10 +142,11 @@ public class AssetsUtil {
         if (resPathMatcher.matches()) {
             resourcePath = resPathMatcher.group(1);
         }
-        if (resourceType == Recipe.class) {
+        if (resourceType == RecipeAnvil.class) {
             try {
                 String s = new String(resourceData, StandardCharsets.UTF_8);
                 T recipe = JsonUtil.INSTANCE.readValue(s, resourceType);
+                recipe.setOriginalPath(originalPath);
                 recipe.setNamespace(namespace);
                 recipe.setPath(resourcePath);
                 return recipe;
@@ -140,10 +158,11 @@ public class AssetsUtil {
                 BufferedImage bufferedImage = ImageIO.read(new ByteArrayInputStream(resourceData));
                 Constructor<T> constructor = resourceType.getConstructor(BufferedImage.class);
                 T t = constructor.newInstance(bufferedImage);
+                t.setOriginalPath(originalPath);
                 t.setNamespace(namespace);
                 t.setPath(resourcePath);
                 Method setTextureType = Texture.class.getMethod("setTextureType", String.class);
-                setTextureType.invoke(t, textureType);
+                setTextureType.invoke(t, thirdType);
                 return t;
             } catch (IOException e) {
                 throw new IllegalArgumentException("IOException when read image on " + namespace + ":" + resourcePath + ".", e);
@@ -151,16 +170,24 @@ public class AssetsUtil {
                      InvocationTargetException e) {
                 throw new IllegalArgumentException("If software changed something but util missed?", e);
             }
+        } else if (resourceType == Tag.class) {
+            try {
+                String s = new String(resourceData, StandardCharsets.UTF_8);
+                T t = JsonUtil.INSTANCE.readValue(s, resourceType);
+                t.setOriginalPath(originalPath);
+                t.setNamespace(namespace);
+                t.setPath(resourcePath);
+                Method setTagType = Tag.class.getMethod("setTagType", String.class);
+                setTagType.invoke(t, thirdType);
+                return t;
+            } catch (JsonProcessingException e) {
+                throw new IllegalArgumentException("Json process error found on " + namespace + ":" + resourcePath + " tag file.", e);
+            } catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+                throw new IllegalArgumentException("If software changed something but util missed?", e);
+            }
         } else {
             throw new UnsupportedOperationException("Resource type " + resourceType.getName() + " is not supported.");
         }
-    }
-
-    public static ResourceLocation forgeIngot2ModItemTexture(@NonNull String forgeIngotId) {
-        // (itemId) forge:ingots/bismuth_bronze -> (itemTextureId) tfc:metal/ingot/bismuth_bronze
-        if (!forgeIngotId.startsWith("forge:ingots/")) return null;
-        // TODO 等校验完材质ID是否需要移除item/前缀后才能继续写逻辑
-        return null;
     }
 
 }

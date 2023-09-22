@@ -24,9 +24,12 @@ import java.util.regex.Pattern;
 @Slf4j
 public class AssetsLoader {
 
-    private static final Pattern onlyLoadTextureAndRecipe = Pattern.compile("^(assets/.*?/textures/.*|data/.*?/recipes/.*)$");
+    private static final Pattern otherModsLoadPattern = Pattern.compile("^(assets/.*?/textures/item/.*|data/.*?/recipes/.*|data/.*?/tags/.*)$");
 
-    public void load() {
+    /**
+     * 加载mod文件内资源
+     */
+    public void loadMods() {
         // 散装Debug时为项目根路径，打包运行后为exe所在路径
         File runLocation = new File(System.getProperty("user.dir")).getAbsoluteFile();
         log.debug("Application working directory: " + runLocation);
@@ -64,10 +67,15 @@ public class AssetsLoader {
                         String modId = mods.getTable(0).getString("modId");
                         if ("tfc".equals(modId)) {
                             // 群峦本体
-                            loadMods(mod, name -> name.startsWith("assets/tfc/textures/gui/") || name.startsWith("assets/tfc/textures/item/") || name.startsWith("data/tfc/recipes/anvil/"));
+                            loadMods(mod, name ->
+                                    name.startsWith("assets/tfc/textures/gui/") ||
+                                            name.startsWith("assets/tfc/textures/item/") ||
+                                            name.startsWith("data/tfc/recipes/anvil/") ||
+                                            name.startsWith("data/tfc/tags/") ||
+                                            name.startsWith("data/forge/tags/"));
                         } else {
                             // 其他mod
-                            loadMods(mod, name -> onlyLoadTextureAndRecipe.matcher(name).matches());
+                            loadMods(mod, name -> otherModsLoadPattern.matcher(name).matches());
                         }
                     }
                 }
@@ -86,7 +94,7 @@ public class AssetsLoader {
         for (Map.Entry<String, byte[]> entry : modMod.entrySet()) {
             ResourceLocation resourceLocation;
             try {
-                resourceLocation = AssetsUtil.readResourceFromData(entry.getKey(), entry.getValue());
+                resourceLocation = AssetsUtil.readResourceFromData(mod.getName(), entry.getKey(), entry.getValue());
             } catch (Exception e) {
                 log.error("Load resource error:", e);
                 continue;
