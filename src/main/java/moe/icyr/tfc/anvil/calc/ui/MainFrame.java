@@ -24,7 +24,7 @@ public class MainFrame extends JFrame {
 
     public MainFrame() throws HeadlessException {
         // 加载配置文件
-        log.info("Config " + ConfigUtil.INSTANCE + " loaded.");
+        log.debug("Config " + ConfigUtil.INSTANCE + " loaded.");
         AssetsLoader assetsLoader = new AssetsLoader();
         // 加载MOD资源包材质包
         assetsLoader.loadMods();
