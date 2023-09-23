@@ -3,12 +3,10 @@ package moe.icyr.tfc.anvil.calc.resource;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
 /**
@@ -23,15 +21,27 @@ public class ResourceManager {
     private static final Map<String, CopyOnWriteArrayList<ResourceLocation>> POOL = new ConcurrentHashMap<>();
 
     /**
-     * 获取命名空间内全部资源
-     * 不推荐使用
+     * 获取指定条件的资源对象
      *
-     * @param namespace 命名空间
-     * @return Nullable!!!
+     * @param namespaceAndResourcePredicate 命名空间和资源条件
+     * @return 资源对象列表
      */
-    @Deprecated
-    public static List<ResourceLocation> getAllResources(@NonNull String namespace) {
-        return POOL.get(namespace);
+    public static @NonNull Map<String, List<ResourceLocation>> getResources(@NonNull BiPredicate<String, ResourceLocation> namespaceAndResourcePredicate) {
+        Map<String, List<ResourceLocation>> collection = new HashMap<>();
+        for (Map.Entry<String, CopyOnWriteArrayList<ResourceLocation>> entry : POOL.entrySet()) {
+            if (entry.getValue() == null) continue;
+            Iterator<ResourceLocation> iterator = entry.getValue().stream().iterator();
+            while (iterator.hasNext()) {
+                ResourceLocation resourceLocation = iterator.next();
+                if (namespaceAndResourcePredicate.test(entry.getKey(), resourceLocation)) {
+                    if (!collection.containsKey(entry.getKey())) {
+                        collection.put(entry.getKey(), new ArrayList<>());
+                    }
+                    collection.get(entry.getKey()).add(resourceLocation);
+                }
+            }
+        }
+        return collection;
     }
 
     /**
@@ -54,28 +64,6 @@ public class ResourceManager {
             }
         }
         return collection;
-    }
-
-    /**
-     * 获取指定资源对象
-     * 不推荐使用
-     *
-     * @param namespace 命名空间
-     * @param path      资源路径
-     * @return Nullable!!!
-     */
-    @Deprecated
-    public static ResourceLocation getResource(@NonNull String namespace, @NonNull String path) {
-        CopyOnWriteArrayList<ResourceLocation> resourceLocations = POOL.get(namespace);
-        if (resourceLocations == null) return null;
-        Iterator<ResourceLocation> iterator = resourceLocations.stream().iterator();
-        while (iterator.hasNext()) {
-            ResourceLocation resourceLocation = iterator.next();
-            if (path.equals(resourceLocation.getPath())) {
-                return resourceLocation;
-            }
-        }
-        return null;
     }
 
     /**

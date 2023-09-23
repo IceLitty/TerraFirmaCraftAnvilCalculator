@@ -49,6 +49,8 @@ public class JsonUtil {
                 .enable(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN)
                 // 关闭空Bean转换异常
                 .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+                // 跳过transient字段
+                .configure(MapperFeature.PROPAGATE_TRANSIENT_MARKER, true)
                 .build()
                 // 指定时间字符串格式
                 .setDateFormat(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss"))

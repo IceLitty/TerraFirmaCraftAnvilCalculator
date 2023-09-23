@@ -29,7 +29,7 @@ public class Texture extends ResourceLocation {
      * </ul>
      */
     private String textureType;
-    private BufferedImage img;
+    private transient BufferedImage img;
 
     public Texture() {
     }

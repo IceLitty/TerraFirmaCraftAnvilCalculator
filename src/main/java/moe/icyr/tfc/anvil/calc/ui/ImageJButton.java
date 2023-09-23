@@ -5,6 +5,8 @@ import moe.icyr.tfc.anvil.calc.resource.RecipeAnvil;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * @author Icy
@@ -13,7 +15,7 @@ import java.awt.*;
 public class ImageJButton extends JButton {
 
     @Getter
-    private RecipeAnvil nowChooseRecipe;
+    private final List<RecipeAnvil> nowChooseRecipes;
 
     public ImageJButton() {
         this(null, null);
@@ -39,6 +41,14 @@ public class ImageJButton extends JButton {
         this.setBorderPainted(false);
         this.setOpaque(true);
         this.setContentAreaFilled(false);
+        this.nowChooseRecipes = new ArrayList<>();
+    }
+
+    @Override
+    public JToolTip createToolTip() {
+        GameTooltip tip = new GameTooltip();
+        tip.setComponent(this);
+        return tip;
     }
 
 }
