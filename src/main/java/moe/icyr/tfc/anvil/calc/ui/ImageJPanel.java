@@ -7,12 +7,13 @@ import java.awt.*;
  * @author Icy
  * @since 2023/9/23
  */
-public class ImagePanel extends JPanel {
+public class ImageJPanel extends JPanel {
 
     private Image image;
 
-    public ImagePanel(Image image) {
+    public ImageJPanel(Image image) {
         this.image = image;
+        this.setLayout(null);
     }
 
     @Override

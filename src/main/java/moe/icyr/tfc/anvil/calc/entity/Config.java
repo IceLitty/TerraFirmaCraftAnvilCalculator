@@ -9,12 +9,14 @@ import lombok.Data;
 @Data
 public class Config {
 
+    private String mapSeed = "";
     private Boolean isResetScreenLocation = false;
     private Integer screenX = 0;
     private Integer screenY = 0;
     private Integer scaleUI = 2;
     private Integer mainFrameWidthOffset = 16;
     private Integer mainFrameHeightOffset = 38;
+    /* Use TFC mc 1.18 ver anvil ui https://github.com/TerraFirmaCraft/TerraFirmaCraft/blob/bba6f10afdabafd49f1c261913d9bae77ca77d27/src/main/resources/assets/tfc/textures/gui/anvil.png */
     /* 素材UI面板位置 */
     private Integer anvilAssetUIX = 0;
     private Integer anvilAssetUIY = 0;
@@ -178,10 +180,10 @@ public class Config {
     private Integer anvilAssetUITargetNowY = 0;
     private Integer anvilAssetUITargetNowWidth = 5;
     private Integer anvilAssetUITargetNowHeight = 5;
-    /* 素材UI当前进度指示器起始0位置 */
+    /* 素材UI当前进度指示器起始第0的位置 */
     private Integer anvilAssetUITargetNowStartX = 13;
     private Integer anvilAssetUITargetNowStartY = 100;
-    /* 素材UI当前进度指示器结束145位置 */
+    /* 素材UI当前进度指示器结束第145的位置 */
     private Integer anvilAssetUITargetNowEndX = 158;
     private Integer anvilAssetUITargetNowEndY = 100;
     /* 素材UI进度指示器位置 */
@@ -189,14 +191,14 @@ public class Config {
     private Integer anvilAssetUITargetY = 0;
     private Integer anvilAssetUITargetWidth = 5;
     private Integer anvilAssetUITargetHeight = 5;
-    /* 素材UI进度指示器起始0位置 */
+    /* 素材UI进度指示器起始第0的位置 */
     private Integer anvilAssetUITargetStartX = 13;
     private Integer anvilAssetUITargetStartY = 94;
-    /* 素材UI进度指示器结束145位置 */
+    /* 素材UI进度指示器结束第145的位置 */
     private Integer anvilAssetUITargetEndX = 158;
     private Integer anvilAssetUITargetEndY = 94;
     /* 素材UI空按钮位置 */
-    private Integer anvilAssetUIButtonX = 210;
+    private Integer anvilAssetUIButtonX = 218;
     private Integer anvilAssetUIButtonY = 0;
     private Integer anvilAssetUIButtonWidth = 18;
     private Integer anvilAssetUIButtonHeight = 18;
@@ -206,33 +208,33 @@ public class Config {
     private Integer anvilAssetUIScrollWidth = 16;
     private Integer anvilAssetUIScrollHeight = 16;
     /* 素材UI打开合成配方按钮位置 */
-    private Integer anvilAssetUIOpenRecipeButtonPosX = 20;
-    private Integer anvilAssetUIOpenRecipeButtonPosY = 39;
+    private Integer anvilAssetUIOpenRecipeButtonX = 20;
+    private Integer anvilAssetUIOpenRecipeButtonY = 39;
     private Integer anvilAssetUIOpenRecipeButtonWidth = 18;
     private Integer anvilAssetUIOpenRecipeButtonHeight = 18;
-    /* 素材UI打开素材1按钮位置 */
-    private Integer anvilAssetUIOpenMaterial1ButtonPosX = 30;
-    private Integer anvilAssetUIOpenMaterial1ButtonPosY = 67;
+    /* 素材UI打开素材1按钮位置(18x18) */
+    private Integer anvilAssetUIOpenMaterial1ButtonX = 30;
+    private Integer anvilAssetUIOpenMaterial1ButtonY = 67;
     private Integer anvilAssetUIOpenMaterial1ButtonWidth = 18;
     private Integer anvilAssetUIOpenMaterial1ButtonHeight = 18;
-    /* 素材UI打开素材2按钮位置 */
-    private Integer anvilAssetUIOpenMaterial2ButtonPosX = 12;
-    private Integer anvilAssetUIOpenMaterial2ButtonPosY = 67;
+    /* 素材UI打开素材2按钮位置(18x18) */
+    private Integer anvilAssetUIOpenMaterial2ButtonX = 12;
+    private Integer anvilAssetUIOpenMaterial2ButtonY = 67;
     private Integer anvilAssetUIOpenMaterial2ButtonWidth = 18;
     private Integer anvilAssetUIOpenMaterial2ButtonHeight = 18;
     /* 素材UI输入当前值输入框位置 */
-    private Integer anvilAssetUIInputTargetNowPosX = 126;
-    private Integer anvilAssetUIInputTargetNowPosY = 86;
+    private Integer anvilAssetUIInputTargetNowX = 128;
+    private Integer anvilAssetUIInputTargetNowY = 86;
     private Integer anvilAssetUIInputTargetNowWidth = 18;
     private Integer anvilAssetUIInputTargetNowHeight = 7;
     /* 素材UI输入目标值输入框位置 */
-    private Integer anvilAssetUIInputTargetPosX = 146;
-    private Integer anvilAssetUIInputTargetPosY = 86;
+    private Integer anvilAssetUIInputTargetX = 146;
+    private Integer anvilAssetUIInputTargetY = 86;
     private Integer anvilAssetUIInputTargetWidth = 18;
     private Integer anvilAssetUIInputTargetHeight = 7;
     /* 素材UI输入种子输入框位置 */
-    private Integer anvilAssetUIInputSeedPosX = 12;
-    private Integer anvilAssetUIInputSeedPosY = 86;
+    private Integer anvilAssetUIInputSeedX = 12;
+    private Integer anvilAssetUIInputSeedY = 86;
     private Integer anvilAssetUIInputSeedWidth = 111;
     private Integer anvilAssetUIInputSeedHeight = 7;
 
