@@ -112,6 +112,9 @@ public class RecipeAnvil extends ResourceLocation {
         private Stack stack;
         private List<Map<String, Object>> modifiers;
         private transient Texture itemTextureCache;
+        public ItemStack(String item) {
+            this.item = item;
+        }
         public String gotItemId() {
             return item != null && !item.isBlank() ? item : (stack == null ? null : stack.item);
         }

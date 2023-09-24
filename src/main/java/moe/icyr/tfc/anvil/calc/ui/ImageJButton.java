@@ -2,6 +2,7 @@ package moe.icyr.tfc.anvil.calc.ui;
 
 import lombok.Getter;
 import moe.icyr.tfc.anvil.calc.resource.RecipeAnvil;
+import moe.icyr.tfc.anvil.calc.util.TooltipColorUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -14,8 +15,13 @@ import java.util.ArrayList;
  */
 public class ImageJButton extends JButton {
 
+    /**
+     * 用于获取按钮绑定的合成配方，目前仅使用0号下标
+     */
     @Getter
     private final List<RecipeAnvil> nowChooseRecipes;
+    @Getter
+    private List<TooltipColorUtil.TooltipColor> colorTooltips;
 
     public ImageJButton() {
         this(null, null);
@@ -44,9 +50,16 @@ public class ImageJButton extends JButton {
         this.nowChooseRecipes = new ArrayList<>();
     }
 
+    public void setColorTooltips(List<TooltipColorUtil.TooltipColor> colorTooltips) {
+        this.colorTooltips = colorTooltips;
+        this.setToolTipText(TooltipColorUtil.getPlainText(colorTooltips));
+    }
+
     @Override
     public JToolTip createToolTip() {
-        GameTooltip tip = new GameTooltip();
+        String toolTipText = this.getToolTipText();
+        GameTooltip tip = new GameTooltip(this.getColorTooltips());
+        tip.setPreferredSize(tip.calcTooltipSize(toolTipText, (Graphics2D) this.getGraphics()));
         tip.setComponent(this);
         return tip;
     }

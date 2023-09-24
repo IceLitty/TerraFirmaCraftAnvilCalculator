@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public class AssetsLoader {
 
-    private static final Pattern otherModsLoadPattern = Pattern.compile("^(assets/.*?/textures/item/.*|data/.*?/recipes/.*|data/.*?/tags/.*)$");
+    private static final Pattern otherModsLoadPattern = Pattern.compile("^(assets/.*?/lang/.*|assets/.*?/textures/(item|block)/.*|data/.*?/recipes/.*|data/.*?/tags/.*)$");
 
     /**
      * 加载mod文件内资源
@@ -54,7 +54,9 @@ public class AssetsLoader {
                 try {
                     modsToml = JarUtil.readFileFromJar(mod, "META-INF/mods.toml");
                 } catch (FileNotFoundException e) {
-                    log.error("Not found META-INF/mods.toml file in mod jar: " + mod.getPath());
+                    log.warn("Not found META-INF/mods.toml file in mod jar: " + mod.getPath() + ". May be it's a minecraft client jar or resource / data pack? Loading...");
+                    // 也许是mc本体
+                    loadMods(mod, name -> otherModsLoadPattern.matcher(name).matches());
                     continue;
                 } catch (IOException e) {
                     log.error("Error when loading mod file: " + mod.getPath(), e);
@@ -69,7 +71,9 @@ public class AssetsLoader {
                             // 群峦本体
                             loadMods(mod, name ->
                                     name.startsWith("assets/tfc/textures/gui/") ||
+                                            name.startsWith("assets/tfc/lang/") ||
                                             name.startsWith("assets/tfc/textures/item/") ||
+                                            name.startsWith("assets/tfc/textures/block/") ||
                                             name.startsWith("data/tfc/recipes/anvil/") ||
                                             name.startsWith("data/tfc/tags/") ||
                                             name.startsWith("data/forge/tags/"));

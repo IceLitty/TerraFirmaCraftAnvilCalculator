@@ -237,5 +237,29 @@ public class Config {
     private Integer anvilAssetUIInputSeedY = 86;
     private Integer anvilAssetUIInputSeedWidth = 111;
     private Integer anvilAssetUIInputSeedHeight = 7;
+    /* Tooltip Margin */
+    private Integer tooltipMargin = 4;
+    private Integer tooltipScale = 2;
+    private Float tooltipFontScale = 1.5f;
+    /* Tooltip背景及外边框颜色 */
+    private Integer tooltipBackgroundColorR = 16;
+    private Integer tooltipBackgroundColorG = 1;
+    private Integer tooltipBackgroundColorB = 16;
+    private Integer tooltipBackgroundColorA = 255;
+    /* Tooltip边框颜色 */
+    private Integer tooltipBorderColorR = 36;
+    private Integer tooltipBorderColorG = 1;
+    private Integer tooltipBorderColorB = 91;
+    private Integer tooltipBorderColorA = 255;
+    /* Tooltip主文本颜色 */
+    private Integer tooltipNamedTextColorR = 252;
+    private Integer tooltipNamedTextColorG = 252;
+    private Integer tooltipNamedTextColorB = 252;
+    private Integer tooltipNamedTextColorA = 255;
+    /* Tooltip副文本颜色 */
+    private Integer tooltipDescTextColorR = 84;
+    private Integer tooltipDescTextColorG = 84;
+    private Integer tooltipDescTextColorB = 84;
+    private Integer tooltipDescTextColorA = 255;
 
 }

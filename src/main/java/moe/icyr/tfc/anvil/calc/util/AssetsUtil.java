@@ -1,12 +1,10 @@
 package moe.icyr.tfc.anvil.calc.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import moe.icyr.tfc.anvil.calc.resource.RecipeAnvil;
-import moe.icyr.tfc.anvil.calc.resource.ResourceLocation;
-import moe.icyr.tfc.anvil.calc.resource.Tag;
-import moe.icyr.tfc.anvil.calc.resource.Texture;
+import moe.icyr.tfc.anvil.calc.resource.*;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -17,9 +15,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * @author Icy
@@ -33,6 +33,7 @@ public class AssetsUtil {
         put(Texture.class, Pattern.compile("^assets/.*?/textures/.*$"));
         put(RecipeAnvil.class, Pattern.compile("^data/.*?/recipes/.*$"));
         put(Tag.class, Pattern.compile("^data/.*?/tags/.*$"));
+        put(Lang.class, Pattern.compile("^assets/.*?/lang/.*$"));
     }};
 
     /**
@@ -136,6 +137,10 @@ public class AssetsUtil {
                 if (resourceType != Tag.class)
                     throw new IllegalArgumentException("Resource type " + minecraftResourceType + " can't matched with " + Tag.class.getSimpleName() + " type!");
             }
+            case "lang" -> {
+                if (resourceType != Lang.class)
+                    throw new IllegalArgumentException("Resource type " + minecraftResourceType + " can't matched with " + Lang.class.getSimpleName() + " type!");
+            }
         }
         // 去除文件名后缀
         Matcher resPathMatcher = pathPattern.matcher(resourcePath);
@@ -184,6 +189,39 @@ public class AssetsUtil {
                 throw new IllegalArgumentException("Json process error found on " + namespace + ":" + resourcePath + " tag file.", e);
             } catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
                 throw new IllegalArgumentException("If software changed something but util missed?", e);
+            }
+        } else if (resourceType == Lang.class) {
+            try {
+                String s = new String(resourceData, StandardCharsets.UTF_8);
+                Lang.LangSets langSets = new Lang.LangSets();
+                langSets.setOriginalPath(originalPath);
+                langSets.setNamespace(namespace);
+                langSets.setPath(resourcePath);
+                String langId = resourcePath;
+                List<Lang> storage = langSets.getStorage();
+                Map<String, String> langMap = JsonUtil.INSTANCE.readValue(s, new TypeReference<>() {
+                });
+                langMap.forEach((k, v) -> {
+                    boolean found = false;
+                    for (Lang stor : storage) {
+                        if (k.equals(stor.getFullKey())) {
+                            stor.getLangValues().put(langId, v);
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        Lang lang = Lang.parseLang(k, langId, v);
+                        if (lang != null) {
+                            lang.setNamespace(langSets.getNamespace());
+                            lang.setPath(k);
+                            storage.add(lang);
+                        }
+                    }
+                });
+                return (T) langSets;
+            } catch (JsonProcessingException e) {
+                throw new IllegalArgumentException("Json process error found on " + namespace + ":" + resourcePath + " lang file.", e);
             }
         } else {
             throw new UnsupportedOperationException("Resource type " + resourceType.getName() + " is not supported.");

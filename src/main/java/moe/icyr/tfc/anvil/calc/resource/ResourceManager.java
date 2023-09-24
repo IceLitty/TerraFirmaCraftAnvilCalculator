@@ -18,7 +18,7 @@ import java.util.function.Predicate;
 @Slf4j
 public class ResourceManager {
 
-    private static final Map<String, CopyOnWriteArrayList<ResourceLocation>> POOL = new ConcurrentHashMap<>();
+    public static final Map<String, CopyOnWriteArrayList<ResourceLocation>> POOL = new ConcurrentHashMap<>();
 
     /**
      * 获取指定条件的资源对象
@@ -78,35 +78,80 @@ public class ResourceManager {
             return false;
         if (POOL.containsKey(resourceLocation.getNamespace())) {
             CopyOnWriteArrayList<ResourceLocation> pool = POOL.get(resourceLocation.getNamespace());
-            if (resourceLocation.getClass() == Tag.class) {
-                // 特殊处理除重逻辑
+            // 特殊处理除重逻辑
+            if (resourceLocation instanceof Tag tagNew) {
                 boolean found = false;
                 Iterator<ResourceLocation> iterator = pool.stream().iterator();
                 while (iterator.hasNext()) {
                     ResourceLocation r = iterator.next();
-                    if (resourceLocation.getPath().equals(r.getPath())) {
-                        if (resourceLocation.getClass() == Tag.class && r.getClass() == Tag.class) {
-                            Tag tagNew = (Tag) resourceLocation;
-                            Tag tagExist = (Tag) r;
-                            tagExist.getValues().addAll(tagNew.getValues());
-                            found = true;
-                        }
+                    if (resourceLocation.getPath().equals(r.getPath()) && r instanceof Tag tagExist) {
+                        tagExist.getValues().addAll(tagNew.getValues());
+                        found = true;
                         break;
                     }
                 }
                 if (!found) {
                     pool.add(resourceLocation);
                 }
+                log.debug("Resource " + resourceLocation.toResourceLocationStr() + " (" + resourceLocation.getOriginalPath() + ") loaded.");
+            } else if (resourceLocation instanceof Lang.LangSets langSets) {
+                // 解包并合并
+                long successCounter = 0;
+                for (Lang lang : langSets.getStorage()) {
+                    boolean found = false;
+                    Iterator<ResourceLocation> iterator = pool.stream().iterator();
+                    while (iterator.hasNext()) {
+                        ResourceLocation r = iterator.next();
+                        if (r instanceof Lang langExist && lang.getFullKey().equals(langExist.getFullKey())) {
+                            langExist.getLangValues().putAll(lang.getLangValues());
+                            successCounter++;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        pool.add(lang);
+                        successCounter++;
+                    }
+                }
+                log.debug("Resource lang (" + resourceLocation.getOriginalPath() + ") " + successCounter + "/" + langSets.getStorage().size() + " loaded.");
             } else {
                 pool.add(resourceLocation);
+                log.debug("Resource " + resourceLocation.toResourceLocationStr() + " (" + resourceLocation.getOriginalPath() + ") loaded.");
             }
-            log.debug("Resource " + resourceLocation.toResourceLocationStr() + " (" + resourceLocation.getOriginalPath() + ") loaded.");
             return true;
         } else {
-            boolean success = null == POOL.putIfAbsent(resourceLocation.getNamespace(), new CopyOnWriteArrayList<>(List.of(resourceLocation)));
-            if (success)
-                log.debug("Resource " + resourceLocation.toResourceLocationStr() + " (" + resourceLocation.getOriginalPath() + ") loaded.");
-            return success;
+            // 新插入
+            if (resourceLocation instanceof Lang.LangSets langSets) {
+                // 解包并合并
+                long successCounter = 0;
+                POOL.putIfAbsent(resourceLocation.getNamespace(), new CopyOnWriteArrayList<>());
+                CopyOnWriteArrayList<ResourceLocation> pool = POOL.get(resourceLocation.getNamespace());
+                for (Lang lang : langSets.getStorage()) {
+                    boolean found = false;
+                    Iterator<ResourceLocation> iterator = pool.stream().iterator();
+                    while (iterator.hasNext()) {
+                        ResourceLocation r = iterator.next();
+                        if (r instanceof Lang langExist && lang.getFullKey().equals(langExist.getFullKey())) {
+                            langExist.getLangValues().putAll(lang.getLangValues());
+                            successCounter++;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        pool.add(lang);
+                        successCounter++;
+                    }
+                }
+                log.debug("Resource lang (" + resourceLocation.getOriginalPath() + ") " + successCounter + "/" + langSets.getStorage().size() + " loaded.");
+                return true;
+            } else {
+                boolean success = null == POOL.putIfAbsent(resourceLocation.getNamespace(), new CopyOnWriteArrayList<>(List.of(resourceLocation)));
+                if (success)
+                    log.debug("Resource " + resourceLocation.toResourceLocationStr() + " (" + resourceLocation.getOriginalPath() + ") loaded.");
+                return success;
+            }
         }
     }
 
