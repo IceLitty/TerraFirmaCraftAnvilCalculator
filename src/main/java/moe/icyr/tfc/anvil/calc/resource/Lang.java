@@ -156,40 +156,6 @@ public abstract class Lang extends ResourceLocation {
         return null;
     }
 
-//    /**
-//     * 获取一级类型
-//     *
-//     * @return NULLABLE!!!
-//     */
-//    public <T extends Lang> T getType() {
-//        if (this instanceof Advancements thisC) {
-//            return (T) thisC;
-//        } else if (this instanceof Attribute thisC) {
-//            return (T) thisC;
-//        } else if (this instanceof Biome thisC) {
-//            return (T) thisC;
-//        } else if (this instanceof Block thisC) {
-//            return (T) thisC;
-//        } else if (this instanceof Container thisC) {
-//            return (T) thisC;
-//        } else if (this instanceof Effect thisC) {
-//            return (T) thisC;
-//        } else if (this instanceof Enchantment thisC) {
-//            return (T) thisC;
-//        } else if (this instanceof Entity thisC) {
-//            return (T) thisC;
-//        } else if (this instanceof Gui thisC) {
-//            return (T) thisC;
-//        } else if (this instanceof Item thisC) {
-//            return (T) thisC;
-//        } else if (this instanceof ItemGroup thisC) {
-//            return (T) thisC;
-//        } else if (this instanceof Stat thisC) {
-//            return (T) thisC;
-//        }
-//        return null;
-//    }
-
     /**
      * 用来在资源管理器之间动态加载的中间类
      */

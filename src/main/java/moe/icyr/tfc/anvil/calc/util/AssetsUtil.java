@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * @author Icy
@@ -75,7 +74,8 @@ public class AssetsUtil {
     public static <T extends ResourceLocation> T readResourceFromData(@NonNull String fileName,
                                                                       @NonNull String resourcePath,
                                                                       byte @NonNull [] resourceData,
-                                                                      @NonNull Class<T> resourceType) throws Exception {
+                                                                      @NonNull Class<T> resourceType)
+            throws IllegalArgumentException, UnsupportedOperationException {
         if (resourcePath.endsWith("/")) {
             throw new IllegalArgumentException("Can't parse directory to resource.");
         }
@@ -219,6 +219,7 @@ public class AssetsUtil {
                         }
                     }
                 });
+                //noinspection unchecked
                 return (T) langSets;
             } catch (JsonProcessingException e) {
                 throw new IllegalArgumentException("Json process error found on " + namespace + ":" + resourcePath + " lang file.", e);

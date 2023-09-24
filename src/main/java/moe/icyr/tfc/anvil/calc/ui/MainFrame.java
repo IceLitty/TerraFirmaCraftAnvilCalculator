@@ -80,19 +80,12 @@ public class MainFrame extends JFrame {
      * 加载TFC铁砧UI
      */
     public void loadAnvilUI() {
-        List<ResourceLocation> anvilRs = ResourceManager.getResources("tfc", r -> r instanceof Texture rr && "gui".equals(rr.getTextureType()) && "anvil".equals(r.getPath()));
-        if (anvilRs.isEmpty()) {
-            log.error("Not load tfc:anvil texture resource!");
+        BufferedImage asset = getTfcAnvilAsset();
+        if (asset == null)
             return;
-        }
-        BufferedImage _asset = ((Texture) anvilRs.get(0)).getImg();
-        BufferedImage asset = new BufferedImage(_asset.getWidth(), _asset.getHeight(), BufferedImage.TYPE_INT_ARGB);
-        Graphics g = asset.getGraphics();
-        g.drawImage(_asset, 0, 0, null);
-        g.dispose();
         BufferedImage anvil = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIX(), ConfigUtil.INSTANCE.getAnvilAssetUIY(),
                 ConfigUtil.INSTANCE.getAnvilAssetUIWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIHeight());
-        g = anvil.getGraphics();
+        Graphics g = anvil.getGraphics();
         // 将背包涂为文本区
         BufferedImage anvilBackpackImg = new BufferedImage(ConfigUtil.INSTANCE.getAnvilAssetUIBackpackWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIBackpackHeight(), BufferedImage.TYPE_INT_ARGB);
         drawSlotUI(anvilBackpackImg);
@@ -169,7 +162,7 @@ public class MainFrame extends JFrame {
                     if (e.getButton() == MouseEvent.BUTTON1) {
                         // 打开合成窗口，显示合成结果列表
                         buttonScroll.setEnabled(false);
-                        openRecipeResultScreen(buttonScroll, buttonMainMaterial, buttonOffMaterial);
+                        openRecipeResultScreen(buttonScroll, buttonMainMaterial, buttonOffMaterial, buttonScroll);
                         buttonScroll.setEnabled(true);
                     } else if (e.getButton() == MouseEvent.BUTTON3) {
                         // 清除合成结果选择
@@ -183,7 +176,7 @@ public class MainFrame extends JFrame {
                         buttonScroll.setEnabled(true);
                     }
                 }
-                log.debug("clicked! " + e.getButton() + " " + e.getID() + " " + source);
+                log.debug("clicked! " + e.getButton() + " " + e.getID() + " " + source); // TODO debug
             }
         });
         this.add(buttonScroll);
@@ -328,13 +321,11 @@ public class MainFrame extends JFrame {
         this.add(seedInputLabel);
         // 输出文本框
         this.outputArea = new JTextPane();
-//        Application.uiOutputAppender.initOutputStream(new UIOutputStream(outputArea));
         outputArea.setOpaque(false);
         outputArea.setBorder(BorderFactory.createEmptyBorder());
         outputArea.setCaretColor(Color.WHITE);
         outputArea.setForeground(Color.WHITE);
         outputArea.setEditable(false);
-//        outputArea.setSelectedTextColor(Color.DARK_GRAY);
         outputArea.setLocation(ConfigUtil.INSTANCE.getScaleUI(), ConfigUtil.INSTANCE.getScaleUI());
         outputArea.setSize(new Dimension((ConfigUtil.INSTANCE.getAnvilAssetUIBackpackWidth() - 2) * ConfigUtil.INSTANCE.getScaleUI(),
                 (ConfigUtil.INSTANCE.getAnvilAssetUIBackpackHeight() - 2) * ConfigUtil.INSTANCE.getScaleUI()));
@@ -393,31 +384,28 @@ public class MainFrame extends JFrame {
      * @param resultButton       结果按钮
      * @param mainMaterialButton 主素材按钮
      * @param offMaterialButton  副素材按钮
+     * @param sourceButton       事件触发按钮
      */
-    public void openRecipeResultScreen(ImageJButton resultButton, ImageJButton mainMaterialButton, ImageJButton offMaterialButton) {
+    private void openRecipeResultScreen(ImageJButton resultButton, ImageJButton mainMaterialButton, ImageJButton offMaterialButton, ImageJButton sourceButton) {
         List<ResourceLocation> recipes = new ArrayList<>();
         ResourceManager.getResources((namespace, resource) -> resource instanceof RecipeAnvil recipeR && "tfc:anvil".equals(recipeR.getType()))
                 .values().forEach(recipes::addAll);
-        if (mainMaterialButton.getNowChooseRecipes() != null && !mainMaterialButton.getNowChooseRecipes().isEmpty()) {
-            recipes = recipes.stream().filter(recipeFilterPredicate(mainMaterialButton.getNowChooseRecipes().get(0))).collect(Collectors.toList());
+        if (sourceButton != resultButton && resultButton.getNowChooseRecipes() != null && !resultButton.getNowChooseRecipes().isEmpty()) {
+            recipes = recipes.stream().filter(recipeFilterPredicate(resultButton.getNowChooseRecipes().get(0), 1)).collect(Collectors.toList());
         }
-        if (offMaterialButton.getNowChooseRecipes() != null && !offMaterialButton.getNowChooseRecipes().isEmpty()) {
-            recipes = recipes.stream().filter(recipeFilterPredicate(offMaterialButton.getNowChooseRecipes().get(0))).collect(Collectors.toList());
+        if (sourceButton != mainMaterialButton && mainMaterialButton.getNowChooseRecipes() != null && !mainMaterialButton.getNowChooseRecipes().isEmpty()) {
+            recipes = recipes.stream().filter(recipeFilterPredicate(mainMaterialButton.getNowChooseRecipes().get(0), 2)).collect(Collectors.toList());
+        }
+        if (sourceButton != offMaterialButton && offMaterialButton.getNowChooseRecipes() != null && !offMaterialButton.getNowChooseRecipes().isEmpty()) {
+            recipes = recipes.stream().filter(recipeFilterPredicate(offMaterialButton.getNowChooseRecipes().get(0), 3)).collect(Collectors.toList());
         }
         // 加载背景图
-        List<ResourceLocation> anvilRs = ResourceManager.getResources("tfc", r -> r instanceof Texture rr && "gui".equals(rr.getTextureType()) && "anvil".equals(r.getPath()));
-        if (anvilRs.isEmpty()) {
-            log.error("Not load tfc:anvil texture resource!");
+        BufferedImage asset = getTfcAnvilAsset();
+        if (asset == null)
             return;
-        }
-        BufferedImage _asset = ((Texture) anvilRs.get(0)).getImg();
-        BufferedImage asset = new BufferedImage(_asset.getWidth(), _asset.getHeight(), BufferedImage.TYPE_INT_ARGB);
-        Graphics g = asset.getGraphics();
-        g.drawImage(_asset, 0, 0, null);
-        g.dispose();
         BufferedImage anvil = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIX(), ConfigUtil.INSTANCE.getAnvilAssetUIY(),
                 ConfigUtil.INSTANCE.getAnvilAssetUIWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIHeight());
-        g = anvil.getGraphics();
+        Graphics g = anvil.getGraphics();
         g.setColor(new Color(ConfigUtil.INSTANCE.getAnvilAssetUIForegroundColorR(), ConfigUtil.INSTANCE.getAnvilAssetUIForegroundColorG(),
                 ConfigUtil.INSTANCE.getAnvilAssetUIForegroundColorB(), ConfigUtil.INSTANCE.getAnvilAssetUIForegroundColorA()));
         g.fillRect(ConfigUtil.INSTANCE.getAnvilAssetUIBackgroundX(), ConfigUtil.INSTANCE.getAnvilAssetUIBackgroundY(),
@@ -432,10 +420,6 @@ public class MainFrame extends JFrame {
         JPanel recipeResultScrollPanePanel = new JPanel();
         recipeResultScrollPanePanel.setOpaque(false);
         recipeResultScrollPanePanel.setLayout(null);
-//        recipeResultScrollPanePanel.setLocation(ConfigUtil.INSTANCE.getAnvilAssetUIBackgroundX() * ConfigUtil.INSTANCE.getScaleUI(),
-//                ConfigUtil.INSTANCE.getAnvilAssetUIBackgroundY() * ConfigUtil.INSTANCE.getScaleUI());
-//        recipeResultScrollPanePanel.setSize(anvil.getWidth() - ConfigUtil.INSTANCE.getAnvilAssetUIBackgroundX() * ConfigUtil.INSTANCE.getScaleUI() * 2 - scrollBarSize,
-//                anvil.getHeight() - ConfigUtil.INSTANCE.getAnvilAssetUIBackgroundY() * ConfigUtil.INSTANCE.getScaleUI() * 2);
         recipeResultScrollPanePanel.setSize(anvil.getWidth() - scrollBarSize, anvil.getHeight());
         recipeResultScrollPanePanel.setPreferredSize(new Dimension(anvil.getWidth() - scrollBarSize, anvil.getHeight()));
         JScrollPane recipeResultScrollPane = new JScrollPane(recipeResultScrollPanePanel, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
@@ -476,6 +460,7 @@ public class MainFrame extends JFrame {
         }
         for (ResourceLocation rl : recipes) {
             RecipeAnvil recipe = (RecipeAnvil) rl;
+            // TODO 根据sourceButton再判断一下从配方中提取物品的来源，是合成结果还是主素材/副素材，然后再循环添加至panel
             if (recipe.getResult() == null) {
                 log.error("Recipe " + recipe.toResourceLocationStr() + " hasn't result list, can't add in recipe menu.");
                 continue;
@@ -486,88 +471,10 @@ public class MainFrame extends JFrame {
                 continue;
             }
             String itemName = getItemDisplayName(itemId, null, recipe.toResourceLocationStr());
-//                String blockNameKey = "block." + itemId.replace(":", ".").replace("/", ".");
-//                String itemNameKey = "item." + itemId.replace(":", ".").replace("/", ".");
-//                Map<String, List<ResourceLocation>> langResources = ResourceManager.getResources((namespace, resource) -> resource instanceof Lang rlang && (blockNameKey.equals(rlang.getFullKey()) || itemNameKey.equals(rlang.getFullKey())));
-//                String itemName = "";
-//                if (!langResources.isEmpty()) {
-//                    for (List<ResourceLocation> ll : langResources.values()) {
-//                        for (ResourceLocation r : ll) {
-//                            Lang lang = (Lang) r;
-//                            itemName = lang.getDisplayName();
-//                            break;
-//                        }
-//                    }
-//                }
-//                if (itemName.isBlank()) {
-//                    log.warn("Recipe " + recipe.toResourceLocationStr() + " hasn't lang resource (block. or item." + itemId.replace(":", ".").replace("/", ".") + "), it will lost name display in tooltip.");
-//                }
             // 写入缓存
             if (recipe.getResult().getItemTextureCache() == null) {
                 Texture texture = getItemOrBlockTexture(itemId, null, recipe.toResourceLocationStr());
                 recipe.getResult().setItemTextureCache(texture);
-//                    Map<String, List<ResourceLocation>> textures = ResourceManager.getResources((n, r) ->
-//                            r instanceof Texture rt && ("item".equals(rt.getTextureType()) || "block".equals(rt.getTextureType())) && itemId.equals(r.toResourceLocationStr()) && rt.getImg() != null);
-//                    if (textures.isEmpty()) {
-//                        log.warn("Can't find " + itemId + " texture from " + recipe.toResourceLocationStr() + " result item, will be display blank icon in result menu.");
-//                    } else {
-//                        if (textures.size() > 1) {
-//                            List<ResourceLocation> texturesTypeItem = new ArrayList<>();
-//                            List<ResourceLocation> texturesTypeBlock = new ArrayList<>();
-//                            textures.values().forEach(rll -> rll.forEach(rllr -> {
-//                                Texture rllr1 = (Texture) rllr;
-//                                if ("item".equals(rllr1.getTextureType())) {
-//                                    texturesTypeItem.add(rllr1);
-//                                } else if ("block".equals(rllr1.getTextureType())) {
-//                                    texturesTypeBlock.add(rllr1);
-//                                }
-//                            }));
-//                            if (texturesTypeItem.size() == 1) {
-//                                ResourceLocation found = texturesTypeItem.get(0);
-//                                recipe.getResult().setItemTextureCache((Texture) found);
-//                                log.warn("Find " + itemId + " textures more than 1 from " + recipe.toResourceLocationStr() + ", but it contain only 1 item texture, UI will use it.");
-//                            } else if (texturesTypeBlock.size() == 1) {
-//                                ResourceLocation found = texturesTypeBlock.get(0);
-//                                recipe.getResult().setItemTextureCache((Texture) found);
-//                                log.warn("Find " + itemId + " textures more than 1 from " + recipe.toResourceLocationStr() + ", but it contain only 1 block texture, UI will use it.");
-//                            } else {
-//                                String join = textures.values().stream().map(rll -> rll.stream().map(ResourceLocation::getOriginalPath).collect(Collectors.joining(", "))).collect(Collectors.joining(", "));
-//                                log.warn("Find " + itemId + " textures more than 1 from " + recipe.toResourceLocationStr() + " result item ([" + join + "]), will be lost in result menu.");
-//                            }
-//                        } else {
-//                            Iterator<String> it = textures.keySet().iterator();
-//                            boolean b = it.hasNext();
-//                            List<ResourceLocation> rll = textures.get(it.next());
-//                            if (rll.isEmpty()) {
-//                                log.warn("Can't find " + itemId + " texture from " + recipe.toResourceLocationStr() + " result item, will be display blank icon in result menu.");
-//                            } else if (rll.size() > 1) {
-//                                List<ResourceLocation> texturesTypeItem = new ArrayList<>();
-//                                List<ResourceLocation> texturesTypeBlock = new ArrayList<>();
-//                                rll.forEach(rllr -> {
-//                                    Texture rllr1 = (Texture) rllr;
-//                                    if ("item".equals(rllr1.getTextureType())) {
-//                                        texturesTypeItem.add(rllr1);
-//                                    } else if ("block".equals(rllr1.getTextureType())) {
-//                                        texturesTypeBlock.add(rllr1);
-//                                    }
-//                                });
-//                                if (texturesTypeItem.size() == 1) {
-//                                    ResourceLocation found = texturesTypeItem.get(0);
-//                                    recipe.getResult().setItemTextureCache((Texture) found);
-//                                    log.warn("Find " + itemId + " textures more than 1 from " + recipe.toResourceLocationStr() + ", but it contain only 1 item texture, UI will use it.");
-//                                } else if (texturesTypeBlock.size() == 1) {
-//                                    ResourceLocation found = texturesTypeBlock.get(0);
-//                                    recipe.getResult().setItemTextureCache((Texture) found);
-//                                    log.warn("Find " + itemId + " textures more than 1 from " + recipe.toResourceLocationStr() + ", but it contain only 1 block texture, UI will use it.");
-//                                } else {
-//                                    String join = rll.stream().map(ResourceLocation::getOriginalPath).collect(Collectors.joining(", "));
-//                                    log.warn("Find " + itemId + " textures more than 1 from " + recipe.toResourceLocationStr() + " result item ([" + join + "]), will be lost in result menu.");
-//                                }
-//                            } else {
-//                                rll.forEach(v -> recipe.getResult().setItemTextureCache((Texture) v));
-//                            }
-//                        }
-//                    }
             }
             BufferedImage img;
             String textureCantFindReason = null;
@@ -743,6 +650,7 @@ public class MainFrame extends JFrame {
                     }
                 } else {
                     Iterator<String> it = textures.keySet().iterator();
+                    //noinspection unused
                     boolean b = it.hasNext();
                     List<ResourceLocation> rll = textures.get(it.next());
                     if (rll.isEmpty()) {
@@ -793,6 +701,10 @@ public class MainFrame extends JFrame {
         if (itemId == null && tagId != null) {
             itemId = getItemIdFromTagId(tagId, sourceId);
         }
+        if (itemId == null) {
+            log.warn("Recipe " + sourceId + " call getItemDisplayName function but with null itemId, it will lost name display in tooltip.");
+            return "";
+        }
         String blockNameKey = "block." + itemId.replace(":", ".").replace("/", ".");
         String itemNameKey = "item." + itemId.replace(":", ".").replace("/", ".");
         Map<String, List<ResourceLocation>> langResources = ResourceManager.getResources((namespace, resource) -> resource instanceof Lang rlang && (blockNameKey.equals(rlang.getFullKey()) || itemNameKey.equals(rlang.getFullKey())));
@@ -819,16 +731,10 @@ public class MainFrame extends JFrame {
      * @return 按钮
      */
     private static ImageJButton makeRecipeImageButton(BufferedImage img, RecipeAnvil recipeAnvil) {
-        List<ResourceLocation> anvilRs = ResourceManager.getResources("tfc", r -> r instanceof Texture rr && "gui".equals(rr.getTextureType()) && "anvil".equals(r.getPath()));
-        if (anvilRs.isEmpty()) {
-            log.error("Not load tfc:anvil texture resource!");
+        BufferedImage asset = getTfcAnvilAsset();
+        if (asset == null) {
             return null;
         }
-        BufferedImage _asset = ((Texture) anvilRs.get(0)).getImg();
-        BufferedImage asset = new BufferedImage(_asset.getWidth(), _asset.getHeight(), BufferedImage.TYPE_INT_ARGB);
-        Graphics g = asset.getGraphics();
-        g.drawImage(_asset, 0, 0, null);
-        g.dispose();
         BufferedImage _buttonScroll = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIButtonX(), ConfigUtil.INSTANCE.getAnvilAssetUIButtonY(),
                 ConfigUtil.INSTANCE.getAnvilAssetUIButtonWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIButtonHeight());
         // 先放大，防止先缩小图标后再放大导致失真
@@ -841,7 +747,7 @@ public class MainFrame extends JFrame {
             AffineTransformOp anvilTransformOp = new AffineTransformOp(anvilTransform, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
             BufferedImage dest = new BufferedImage(img.getWidth() * ConfigUtil.INSTANCE.getScaleUI(), img.getHeight() * ConfigUtil.INSTANCE.getScaleUI(), BufferedImage.TYPE_INT_ARGB);
             img = anvilTransformOp.filter(img, dest);
-            g = _buttonScroll.getGraphics();
+            Graphics g = _buttonScroll.getGraphics();
             g.drawImage(img, 1, 1, img.getWidth(), img.getHeight(), null);
             g.dispose();
         }
@@ -911,9 +817,11 @@ public class MainFrame extends JFrame {
      * 筛选符合已选合成素材的配方
      * TODO 目前带不出来，可能要用公用方法把tag转换itemid来覆盖掉此处逻辑以重写
      *
+     * @param nowChoose
+     * @param findFromWhere 查询源，用来区分从配方的哪处进行筛选。1=结果按钮，2=主素材按钮，3=副素材按钮
      * @return 筛选方法 {@link java.util.function.Predicate}<{@link Map.Entry}<{@link String}, {@link RecipeAnvil}>
      */
-    private static Predicate<ResourceLocation> recipeFilterPredicate(RecipeAnvil nowChoose) {
+    private static Predicate<ResourceLocation> recipeFilterPredicate(RecipeAnvil nowChoose, int findFromWhere) {
         return recipe -> {
             RecipeAnvil.Ingredients input = ((RecipeAnvil) recipe).getInput();
             if (input.getItem() != null && !input.getItem().isBlank()) {

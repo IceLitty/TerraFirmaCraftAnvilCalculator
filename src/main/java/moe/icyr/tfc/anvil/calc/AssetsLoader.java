@@ -35,7 +35,8 @@ public class AssetsLoader {
         log.debug("Application working directory: " + runLocation);
         File modsFolder = new File(runLocation, "mods");
         if (!modsFolder.exists()) {
-            modsFolder.mkdir();
+            //noinspection unused
+            boolean success = modsFolder.mkdir();
         }
         if (modsFolder.exists() && modsFolder.isDirectory() && modsFolder.canRead()) {
             File[] files = modsFolder.listFiles();
