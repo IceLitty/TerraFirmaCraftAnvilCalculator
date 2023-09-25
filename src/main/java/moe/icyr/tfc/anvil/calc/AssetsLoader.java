@@ -68,6 +68,10 @@ public class AssetsLoader {
                     TomlArray mods = tomlParseResult.getArray("mods");
                     if (mods != null && mods.size() > 0) {
                         String modId = mods.getTable(0).getString("modId");
+                        String displayName = mods.getTable(0).getString("displayName");
+                        if (modId != null && !modId.isBlank() && displayName != null && !displayName.isBlank()) {
+                            ResourceManager.putModDisplayNameWithModId(modId, displayName);
+                        }
                         if ("tfc".equals(modId)) {
                             // 群峦本体
                             loadMods(mod, name ->

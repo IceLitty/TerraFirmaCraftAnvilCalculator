@@ -261,5 +261,10 @@ public class Config {
     private Integer tooltipDescTextColorG = 84;
     private Integer tooltipDescTextColorB = 84;
     private Integer tooltipDescTextColorA = 255;
+    /* TooltipModId文本颜色 */
+    private Integer tooltipModIdColorR = 84;
+    private Integer tooltipModIdColorG = 84;
+    private Integer tooltipModIdColorB = 252;
+    private Integer tooltipModIdColorA = 255;
 
 }

@@ -18,7 +18,8 @@ import java.util.function.Predicate;
 @Slf4j
 public class ResourceManager {
 
-    public static final Map<String, CopyOnWriteArrayList<ResourceLocation>> POOL = new ConcurrentHashMap<>();
+    private static final Map<String, String> MODNAME = new HashMap<>();
+    private static final Map<String, CopyOnWriteArrayList<ResourceLocation>> POOL = new ConcurrentHashMap<>();
 
     /**
      * 获取指定条件的资源对象
@@ -152,6 +153,28 @@ public class ResourceManager {
                     log.debug("Resource " + resourceLocation.toResourceLocationStr() + " (" + resourceLocation.getOriginalPath() + ") loaded.");
                 return success;
             }
+        }
+    }
+
+    public static void putModDisplayNameWithModId(@NonNull String modId, @NonNull String modDisplayName) {
+        MODNAME.put(modId, modDisplayName);
+    }
+
+    /**
+     * 获取MOD显示名称
+     * 存在不可靠风险！
+     *
+     * @param modId modId
+     * @return mod名称
+     */
+    public static @NonNull String getModDisplayNameByModId(@NonNull String modId) {
+        if ("minecraft".equals(modId))
+            return "Minecraft";
+        String s = MODNAME.get(modId);
+        if (s == null || s.isBlank()) {
+            return modId;
+        } else {
+            return s;
         }
     }
 

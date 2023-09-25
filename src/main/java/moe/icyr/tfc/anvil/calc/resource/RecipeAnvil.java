@@ -29,11 +29,17 @@ public class RecipeAnvil extends ResourceLocation {
     private List<String> rules;
     private Boolean applyForgingBonus;
 
+    public interface Textureable {
+        Texture getItemTextureCache();
+        void setItemTextureCache(Texture texture);
+    }
+
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class Ingredients {
+    public static class Ingredients implements Textureable {
         private String item;
+        private transient Texture itemTextureCache;
         private String tag;
         private transient List<Tag> tagCache = new ArrayList<>();
         private String type;
@@ -106,7 +112,7 @@ public class RecipeAnvil extends ResourceLocation {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class ItemStack {
+    public static class ItemStack implements Textureable {
         private String item;
         private Integer count;
         private Stack stack;

@@ -8,6 +8,8 @@ import moe.icyr.tfc.anvil.calc.util.TooltipColorUtil;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.font.TextAttribute;
+import java.text.AttributedString;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -110,7 +112,18 @@ public class GameTooltip extends JToolTip {
                     g2d.setPaint(new Color(c.getColor().getRed(), c.getColor().getGreen(),
                             c.getColor().getBlue(), c.getColor().getAlpha()));
                 }
-                g2d.drawString(c.getText(), afterX,  afterY);
+                if (c.getBold() || c.getItalic()) {
+                    AttributedString attrStr = new AttributedString(c.getText());
+                    if (c.getBold()) {
+                        attrStr.addAttribute(TextAttribute.WEIGHT, TextAttribute.WEIGHT_BOLD);
+                    }
+                    if (c.getItalic()) {
+                        attrStr.addAttribute(TextAttribute.FONT, new Font(font.getFontName(), Font.ITALIC, derivedFont.getSize()));
+                    }
+                    g2d.drawString(attrStr.getIterator(), afterX,  afterY);
+                } else {
+                    g2d.drawString(c.getText(), afterX,  afterY);
+                }
                 if (i < colors.size() - 1 && "\n".equals(colors.get(i + 1).getText())) {
                     double thisLineHeight = derivedFont.createGlyphVector(metrics.getFontRenderContext(), c.getText()).getVisualBounds().getHeight();
                     afterX = ConfigUtil.INSTANCE.getTooltipMargin() * ConfigUtil.INSTANCE.getTooltipScale();

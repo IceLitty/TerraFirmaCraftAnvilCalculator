@@ -162,7 +162,7 @@ public class MainFrame extends JFrame {
                     if (e.getButton() == MouseEvent.BUTTON1) {
                         // 打开合成窗口，显示合成结果列表
                         buttonScroll.setEnabled(false);
-                        openRecipeResultScreen(buttonScroll, buttonMainMaterial, buttonOffMaterial, buttonScroll);
+                        openRecipeResultScreen(buttonScroll);
                         buttonScroll.setEnabled(true);
                     } else if (e.getButton() == MouseEvent.BUTTON3) {
                         // 清除合成结果选择
@@ -381,24 +381,13 @@ public class MainFrame extends JFrame {
     /**
      * 打开合成结果选择页面
      *
-     * @param resultButton       结果按钮
-     * @param mainMaterialButton 主素材按钮
-     * @param offMaterialButton  副素材按钮
-     * @param sourceButton       事件触发按钮
+     * @param sourceButton 事件触发按钮，会根据此按钮读取其他几个按钮的已选配方数据
      */
-    private void openRecipeResultScreen(ImageJButton resultButton, ImageJButton mainMaterialButton, ImageJButton offMaterialButton, ImageJButton sourceButton) {
+    private void openRecipeResultScreen(ImageJButton sourceButton) {
         List<ResourceLocation> recipes = new ArrayList<>();
         ResourceManager.getResources((namespace, resource) -> resource instanceof RecipeAnvil recipeR && "tfc:anvil".equals(recipeR.getType()))
                 .values().forEach(recipes::addAll);
-        if (sourceButton != resultButton && resultButton.getNowChooseRecipes() != null && !resultButton.getNowChooseRecipes().isEmpty()) {
-            recipes = recipes.stream().filter(recipeFilterPredicate(resultButton.getNowChooseRecipes().get(0), 1)).collect(Collectors.toList());
-        }
-        if (sourceButton != mainMaterialButton && mainMaterialButton.getNowChooseRecipes() != null && !mainMaterialButton.getNowChooseRecipes().isEmpty()) {
-            recipes = recipes.stream().filter(recipeFilterPredicate(mainMaterialButton.getNowChooseRecipes().get(0), 2)).collect(Collectors.toList());
-        }
-        if (sourceButton != offMaterialButton && offMaterialButton.getNowChooseRecipes() != null && !offMaterialButton.getNowChooseRecipes().isEmpty()) {
-            recipes = recipes.stream().filter(recipeFilterPredicate(offMaterialButton.getNowChooseRecipes().get(0), 3)).collect(Collectors.toList());
-        }
+        recipes = recipes.stream().filter(recipeFilterPredicate(sourceButton)).collect(Collectors.toList());
         // 加载背景图
         BufferedImage asset = getTfcAnvilAsset();
         if (asset == null)
@@ -460,26 +449,61 @@ public class MainFrame extends JFrame {
         }
         for (ResourceLocation rl : recipes) {
             RecipeAnvil recipe = (RecipeAnvil) rl;
-            // TODO 根据sourceButton再判断一下从配方中提取物品的来源，是合成结果还是主素材/副素材，然后再循环添加至panel
-            if (recipe.getResult() == null) {
-                log.error("Recipe " + recipe.toResourceLocationStr() + " hasn't result list, can't add in recipe menu.");
+            String itemId;
+            if (sourceButton == this.buttonScroll) {
+                if (recipe.getResult() == null) {
+                    log.error("Recipe " + recipe.toResourceLocationStr() + " hasn't result list, can't add in choose menu.");
+                    continue;
+                }
+                itemId = recipe.getResult().gotItemId();
+                if (itemId == null || itemId.isBlank()) {
+                    log.error("Recipe " + recipe.toResourceLocationStr() + " has an empty result list, can't add in choose menu.");
+                }
+            } else if (sourceButton == this.buttonMainMaterial) {
+                itemId = getItemIdFromTagId(recipe.getInput(), recipe.toResourceLocationStr());
+                if (itemId == null || itemId.isBlank()) {
+                    log.error("Recipe " + recipe.toResourceLocationStr() + " has an empty input ingredient, can't add in choose menu.");
+                }
+            } else if (sourceButton == this.buttonOffMaterial) {
+                continue;
+            } else {
                 continue;
             }
-            String itemId = recipe.getResult().gotItemId();
             if (itemId == null || itemId.isBlank()) {
-                log.error("Recipe " + recipe.toResourceLocationStr() + " has an empty result list, can't add in recipe menu.");
                 continue;
             }
+            String itemNamespace = itemId.split(":")[0];
             String itemName = getItemDisplayName(itemId, null, recipe.toResourceLocationStr());
-            // 写入缓存
-            if (recipe.getResult().getItemTextureCache() == null) {
+            String fullRecipeDesc = "";
+            String resultItemName = getItemDisplayName(recipe.getResult().gotItemId(), null, recipe.toResourceLocationStr());
+            String inputMainItemName = getItemDisplayName(recipe.getInput().getItem(), recipe.getInput().getTag(), recipe.toResourceLocationStr());
+            String inputOffItemName = "";
+            if (!inputMainItemName.isBlank()) {
+                fullRecipeDesc += inputMainItemName;
+            }
+            if (!inputOffItemName.isBlank()) {
+                fullRecipeDesc += "+" + inputOffItemName;
+            }
+            if (!resultItemName.isBlank()) {
+                fullRecipeDesc += "->" + resultItemName;
+            }
+            final String finalFullRecipeDesc = fullRecipeDesc;
+            // 获取材质写入缓存
+            RecipeAnvil.Textureable textureable;
+            if (sourceButton == this.buttonScroll) {
+                textureable = recipe.getResult();
+            } else {
+                textureable = recipe.getInput();
+            }
+            if (textureable.getItemTextureCache() == null) {
                 Texture texture = getItemOrBlockTexture(itemId, null, recipe.toResourceLocationStr());
-                recipe.getResult().setItemTextureCache(texture);
+                textureable.setItemTextureCache(texture);
             }
             BufferedImage img;
-            String textureCantFindReason = null;
-            if (recipe.getResult().getItemTextureCache() != null) {
-                Texture texture = recipe.getResult().getItemTextureCache();
+            final String textureCantFindReason;
+            if (textureable.getItemTextureCache() != null) {
+                textureCantFindReason = null;
+                Texture texture = textureable.getItemTextureCache();
                 img = texture.getImg();
             } else {
                 img = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
@@ -499,14 +523,21 @@ public class MainFrame extends JFrame {
                 lastButtonX += recipeButton.getWidth() + ConfigUtil.INSTANCE.getScaleUI();
             }
             recipeButton.setLocation(lastButtonX, lastButtonY);
-            recipeButton.setColorTooltips(TooltipColorUtil.builder().withText(itemName,
-                            ColorPresent.getTooltipItemName())
+            recipeButton.setColorTooltips(TooltipColorUtil.builder()
+                    .withText(itemName, ColorPresent.getTooltipItemName())
                     .withNewLine().withText(itemId, ColorPresent.getTooltipItemDesc())
-                    .withText(textureCantFindReason == null ? null : "\n" + textureCantFindReason, Color.RED).build());
+                    .withNewLine().withText("Mod: ", ColorPresent.getTooltipItemDesc()).withText(ResourceManager.getModDisplayNameByModId(itemNamespace), ColorPresent.getTooltipModId(), false, true)
+                    .withText(!fullRecipeDesc.isBlank() ? null : "\n" + fullRecipeDesc, ColorPresent.getTooltipItemDesc())
+                    .withNewLine().withText("Recipe from: " + recipe.toResourceLocationStr(), ColorPresent.getTooltipItemDesc())
+                    .withText(textureCantFindReason == null ? null : "\n" + textureCantFindReason, Color.RED)
+                    .build());
             recipeButton.addActionListener(e -> {
                 // 选中配方，带入主窗口
-                ImageJButton source = (ImageJButton) e.getSource();
-                RecipeAnvil nowChooseRecipe = source.getNowChooseRecipes().get(0);
+                ImageJButton chooseRecipe = (ImageJButton) e.getSource();
+                RecipeAnvil nowChooseRecipe = chooseRecipe.getNowChooseRecipes().get(0);
+                String resultItemId = nowChooseRecipe.getResult().gotItemId();
+                String mainMaterialItemId = getItemIdFromTagId(nowChooseRecipe.getInput(), nowChooseRecipe.toResourceLocationStr());
+                // 设置结果按钮
                 List<RecipeAnvil> savedRecipe = this.buttonScroll.getNowChooseRecipes();
                 if (savedRecipe.size() == 0) {
                     savedRecipe.add(nowChooseRecipe);
@@ -523,8 +554,20 @@ public class MainFrame extends JFrame {
                 if (icon != null) {
                     this.buttonScroll.setIcon(new ImageIcon(icon));
                 }
-                this.buttonScroll.setColorTooltips(source.getColorTooltips());
-                // TODO 将配方的输入也带入UI、将配方的规则也带入面板、若有seed则计算target及自动计算
+                this.buttonScroll.setColorTooltips(TooltipColorUtil.builder()
+                        .withText(resultItemName, ColorPresent.getTooltipItemName())
+                        .withNewLine().withText(resultItemId, ColorPresent.getTooltipItemDesc())
+                        .withNewLine().withText("Mod: ", ColorPresent.getTooltipItemDesc()).withText(ResourceManager.getModDisplayNameByModId(resultItemId.split(":")[0]), ColorPresent.getTooltipModId(), false, true)
+                        .withText(!finalFullRecipeDesc.isBlank() ? null : "\n" + finalFullRecipeDesc, ColorPresent.getTooltipItemDesc())
+                        .withNewLine().withText("Recipe from: " + recipe.toResourceLocationStr(), ColorPresent.getTooltipItemDesc())
+                        .build());
+                // 设置主素材按钮
+                savedRecipe = this.buttonMainMaterial.getNowChooseRecipes();
+                if (savedRecipe.size() == 0) {
+                    savedRecipe.add(nowChooseRecipe);
+                } else {
+                    savedRecipe.set(0, nowChooseRecipe);
+                }
                 RecipeAnvil.Ingredients input = nowChooseRecipe.getInput();
                 Texture inputTexture = getItemOrBlockTexture(input.getItem(), input.getTag(), nowChooseRecipe.toResourceLocationStr());
                 if (inputTexture == null) {
@@ -532,17 +575,16 @@ public class MainFrame extends JFrame {
                 } else {
                     this.buttonMainMaterial.setIcon(new ImageIcon(scaleGlobally(inputTexture.getImg())));
                 }
-                savedRecipe = this.buttonMainMaterial.getNowChooseRecipes();
-                if (savedRecipe.size() == 0) {
-                    savedRecipe.add(nowChooseRecipe);
-                } else {
-                    savedRecipe.set(0, nowChooseRecipe);
-                }
-                this.buttonMainMaterial.setColorTooltips(TooltipColorUtil.builder().withText(
-                                getItemDisplayName(input.getItem(), input.getTag(), nowChooseRecipe.toResourceLocationStr()), ColorPresent.getTooltipItemName())
-                        .withNewLine().withText(itemId, ColorPresent.getTooltipItemDesc()).build());
+                this.buttonMainMaterial.setColorTooltips(TooltipColorUtil.builder()
+                        .withText(inputMainItemName, ColorPresent.getTooltipItemName())
+                        .withNewLine().withText(mainMaterialItemId, ColorPresent.getTooltipItemDesc())
+                        .withNewLine().withText("Mod: ", ColorPresent.getTooltipItemDesc()).withText(ResourceManager.getModDisplayNameByModId(mainMaterialItemId.split(":")[0]), ColorPresent.getTooltipModId(), false, true)
+                        .withNewLine().withText("Recipe from: " + recipe.toResourceLocationStr(), ColorPresent.getTooltipItemDesc())
+                        .build());
+                // 设置副素材按钮
                 this.buttonOffMaterial.setIcon(null);
                 this.buttonOffMaterial.getNowChooseRecipes().clear();
+                // TODO 将配方的规则也带入面板、若有seed则计算target及自动计算
                 recipeResultPanel.removeAll();
                 this.mainFrame.remove(recipeResultPanel);
                 this.outputScrollPane.setVisible(true);
@@ -554,7 +596,7 @@ public class MainFrame extends JFrame {
                 this.buttonScroll.setVisible(true);
                 this.mainFrame.revalidate();
                 this.mainFrame.repaint();
-                log.debug("clicked! " + source.getNowChooseRecipes());
+                log.debug("clicked! " + chooseRecipe.getNowChooseRecipes());
             });
             recipeResultScrollPanePanel.add(recipeButton);
         }
@@ -602,6 +644,36 @@ public class MainFrame extends JFrame {
                     }
                 }
             }
+        }
+        return itemId;
+    }
+
+    /**
+     * 通过TagId获取物品Id
+     *
+     * @param itemId   物品ID
+     * @param tagId    TagId
+     * @param sourceId 用于日志打印的请求来源ID
+     * @return 物品ID
+     */
+    private static String getItemIdFromTagId(String itemId, String tagId, String sourceId) {
+        if (itemId == null && tagId != null) {
+            itemId = getItemIdFromTagId(tagId, sourceId);
+        }
+        return itemId;
+    }
+
+    /**
+     * 通过TagId获取物品Id
+     *
+     * @param ingredients 合成配方输入配方
+     * @param sourceId    用于日志打印的请求来源ID
+     * @return 物品ID
+     */
+    private static String getItemIdFromTagId(RecipeAnvil.Ingredients ingredients, String sourceId) {
+        String itemId = null;
+        if ((ingredients.getItem() == null || ingredients.getItem().isBlank()) && ingredients.getTag() != null) {
+            itemId = getItemIdFromTagId(ingredients.getTag(), sourceId);
         }
         return itemId;
     }
@@ -815,49 +887,45 @@ public class MainFrame extends JFrame {
 
     /**
      * 筛选符合已选合成素材的配方
-     * TODO 目前带不出来，可能要用公用方法把tag转换itemid来覆盖掉此处逻辑以重写
+     * TODO 因为目前没有第二输入物的配方，不清楚input{@link RecipeAnvil.Ingredients}是怎么读取第二个输入物的，好像只有tfc:welding格式才有两个输入
      *
-     * @param nowChoose
-     * @param findFromWhere 查询源，用来区分从配方的哪处进行筛选。1=结果按钮，2=主素材按钮，3=副素材按钮
-     * @return 筛选方法 {@link java.util.function.Predicate}<{@link Map.Entry}<{@link String}, {@link RecipeAnvil}>
+     * @param source 事件来源按钮
+     * @return 是否通过筛选，加入面板
      */
-    private static Predicate<ResourceLocation> recipeFilterPredicate(RecipeAnvil nowChoose, int findFromWhere) {
-        return recipe -> {
-            RecipeAnvil.Ingredients input = ((RecipeAnvil) recipe).getInput();
-            if (input.getItem() != null && !input.getItem().isBlank()) {
-                if (nowChoose.toResourceLocationStr().equals(input.getItem())) {
+    @SuppressWarnings({"ConstantValue", "RedundantIfStatement"})
+    private Predicate<ResourceLocation> recipeFilterPredicate(ImageJButton source) {
+        return resource -> {
+            if (!(resource instanceof RecipeAnvil recipe)) return false;
+            if (source == this.buttonScroll) {
+                String firstInput = this.buttonMainMaterial.getNowChooseRecipes().isEmpty() ? null : getItemIdFromTagId(this.buttonMainMaterial.getNowChooseRecipes().get(0).getInput(), this.buttonMainMaterial.getNowChooseRecipes().get(0).toResourceLocationStr());
+                String secondInput = null;
+                if (firstInput == null && secondInput == null)
                     return true;
-                }
-            } else if (input.getTag() != null && !input.getTag().isBlank()) {
-                // 写入缓存
-                if (input.getTagCache().isEmpty()) {
-                    Map<String, List<ResourceLocation>> tags = ResourceManager.getResources((n, r) ->
-                            r instanceof Tag && r.toResourceLocationStr().equals(input.getTag()));
-                    if (tags.isEmpty()) {
-                        log.warn("Can't find " + input.getTag() + " from " + recipe.toResourceLocationStr() + " input ingredients, will be lost in result menu.");
-                    } else {
-                        tags.values().forEach(t -> t.forEach(tl -> input.getTagCache().add((Tag) tl)));
-                    }
-                }
-                if (!input.getTagCache().isEmpty()) {
-                    for (Tag t : input.getTagCache()) {
-                        for (String tv : t.getValues()) {
-                            if (nowChoose.toResourceLocationStr().equals(tv)) {
-                                return true;
-                            }
-                        }
-                    }
-                }
-            } else if (input.getType() != null && !input.getType().isBlank()) {
-                if (input.getIngredient() != null && input.getIngredient().getItem() != null) {
-                    if (nowChoose.toResourceLocationStr().equals(input.getIngredient().getItem())) {
-                        return true;
-                    }
-                } else {
-                    log.warn("This type " + input.getType() + " doesn't specific an item id, so can't support. This recipe from " + recipe.toResourceLocationStr() + " and will be lost in result menu.");
-                }
+                String targetFirstInput = getItemIdFromTagId(recipe.getInput(), recipe.toResourceLocationStr());
+                String targetSecondInput = null;
+                if (firstInput != null && !firstInput.equals(targetFirstInput))
+                    return false;
+                if (secondInput != null && !secondInput.equals(targetSecondInput))
+                    return false;
+                return true;
+            } else if (source == this.buttonMainMaterial) {
+                String output = this.buttonScroll.getNowChooseRecipes().isEmpty() ? null : this.buttonScroll.getNowChooseRecipes().get(0).getResult().gotItemId();
+                String secondInput = null;
+                if (output == null && secondInput == null)
+                    return true;
+                String targetOutput = recipe.getResult().gotItemId();
+                String targetSecondInput = null;
+                if (output != null && !output.equals(targetOutput))
+                    return false;
+                if (secondInput != null && !secondInput.equals(targetSecondInput))
+                    return false;
+                return true;
+            } else if (source == this.buttonOffMaterial) {
+                // 目前没有需要第二个素材的配方
+                return false;
+            } else {
+                return false;
             }
-            return false;
         };
     }
 

@@ -10,6 +10,7 @@ public class ColorPresent {
 
     private static Color tooltipItemName;
     private static Color tooltipItemDesc;
+    private static Color tooltipModId;
 
     public static Color getTooltipItemName() {
         if (tooltipItemName == null) {
@@ -25,6 +26,14 @@ public class ColorPresent {
                     ConfigUtil.INSTANCE.getTooltipDescTextColorB(), ConfigUtil.INSTANCE.getTooltipDescTextColorA());
         }
         return tooltipItemDesc;
+    }
+
+    public static Color getTooltipModId() {
+        if (tooltipModId == null) {
+            tooltipModId = new Color(ConfigUtil.INSTANCE.getTooltipModIdColorR(), ConfigUtil.INSTANCE.getTooltipModIdColorG(),
+                    ConfigUtil.INSTANCE.getTooltipModIdColorB(), ConfigUtil.INSTANCE.getTooltipModIdColorA());
+        }
+        return tooltipModId;
     }
 
 }
