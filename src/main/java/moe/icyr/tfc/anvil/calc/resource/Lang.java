@@ -35,6 +35,7 @@ public abstract class Lang extends ResourceLocation {
      *     <li>item.{namespace}.{itemId}</li>
      *     <li>itemGroup.{tag}</li>
      *     <li>stat.{namespace}.{statId}</li>
+     *     <li>tfc.enum.{enumKey}</li>
      * </ul>
      */
     private String fullKey;
@@ -150,6 +151,9 @@ public abstract class Lang extends ResourceLocation {
                 }
                 case "stat" -> {
                     return (T) new Stat(fullKey, langVal);
+                }
+                case "tfc" -> {
+                    return (T) new Tfc(fullKey, langVal);
                 }
             }
         }
@@ -494,6 +498,32 @@ public abstract class Lang extends ResourceLocation {
             return null;
         }
         public String getStatKey() {
+            Matcher matcher = takePattern.matcher(super.getFullKey());
+            if (matcher.matches()) {
+                if (matcher.groupCount() > 2) {
+                    return matcher.group(3);
+                }
+            }
+            return null;
+        }
+    }
+
+    @Data
+    @EqualsAndHashCode(callSuper = true)
+    public static class Tfc extends Lang {
+        public Tfc(String fullKey, Map<String, String> langValues) {
+            super(fullKey, langValues);
+        }
+        public String getType() {
+            Matcher matcher = takePattern.matcher(super.getFullKey());
+            if (matcher.matches()) {
+                if (matcher.groupCount() > 1) {
+                    return matcher.group(2);
+                }
+            }
+            return null;
+        }
+        public String getEnumKey() {
             Matcher matcher = takePattern.matcher(super.getFullKey());
             if (matcher.matches()) {
                 if (matcher.groupCount() > 2) {

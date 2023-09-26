@@ -117,21 +117,37 @@ public class Config {
     private Integer anvilAssetUITechDrawX = 71;
     private Integer anvilAssetUITechDrawY = 68;
     /* UI配方框架颜色 */
+    private Integer anvilAssetUIRecipeFrameColorRSrc = 216;
+    private Integer anvilAssetUIRecipeFrameColorGSrc = 216;
+    private Integer anvilAssetUIRecipeFrameColorBSrc = 216;
+    private Integer anvilAssetUIRecipeFrameColorASrc = 255;
     private Integer anvilAssetUIRecipeFrameColorR = 0;
     private Integer anvilAssetUIRecipeFrameColorG = 130;
     private Integer anvilAssetUIRecipeFrameColorB = 43;
     private Integer anvilAssetUIRecipeFrameColorA = 255;
     /* UI配方框架阴影色 */
+    private Integer anvilAssetUIRecipeFrameDarkerColorRSrc = 174;
+    private Integer anvilAssetUIRecipeFrameDarkerColorGSrc = 174;
+    private Integer anvilAssetUIRecipeFrameDarkerColorBSrc = 174;
+    private Integer anvilAssetUIRecipeFrameDarkerColorASrc = 255;
     private Integer anvilAssetUIRecipeFrameDarkerColorR = 0;
     private Integer anvilAssetUIRecipeFrameDarkerColorG = 104;
     private Integer anvilAssetUIRecipeFrameDarkerColorB = 35;
     private Integer anvilAssetUIRecipeFrameDarkerColorA = 255;
     /* UI配方框架高亮色 */
+    private Integer anvilAssetUIRecipeFrameLighterColorRSrc = 255;
+    private Integer anvilAssetUIRecipeFrameLighterColorGSrc = 255;
+    private Integer anvilAssetUIRecipeFrameLighterColorBSrc = 255;
+    private Integer anvilAssetUIRecipeFrameLighterColorASrc = 255;
     private Integer anvilAssetUIRecipeFrameLighterColorR = 0;
     private Integer anvilAssetUIRecipeFrameLighterColorG = 146;
     private Integer anvilAssetUIRecipeFrameLighterColorB = 49;
     private Integer anvilAssetUIRecipeFrameLighterColorA = 255;
     /* UI配方框架过渡色 */
+    private Integer anvilAssetUIRecipeFrameMiddleColorRSrc = 243;
+    private Integer anvilAssetUIRecipeFrameMiddleColorGSrc = 243;
+    private Integer anvilAssetUIRecipeFrameMiddleColorBSrc = 243;
+    private Integer anvilAssetUIRecipeFrameMiddleColorASrc = 255;
     private Integer anvilAssetUIRecipeFrameMiddleColorR = 0;
     private Integer anvilAssetUIRecipeFrameMiddleColorG = 153;
     private Integer anvilAssetUIRecipeFrameMiddleColorB = 51;
@@ -175,6 +191,11 @@ public class Config {
     /* 素材UI配方框架放置位置3 */
     private Integer anvilAssetUIRecipeFramePos3X = 97;
     private Integer anvilAssetUIRecipeFramePos3Y = 7;
+    /* 素材UI配方框架内部相对位置和大小 */
+    private Integer anvilAssetUIRecipeFrameX = 5;
+    private Integer anvilAssetUIRecipeFrameY = 3;
+    private Integer anvilAssetUIRecipeFrameWidth = 10;
+    private Integer anvilAssetUIRecipeFrameHeight = 10;
     /* 素材UI当前进度指示器位置 */
     private Integer anvilAssetUITargetNowX = 176;
     private Integer anvilAssetUITargetNowY = 0;

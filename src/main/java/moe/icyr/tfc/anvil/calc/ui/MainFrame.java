@@ -4,10 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import moe.icyr.tfc.anvil.calc.AssetsLoader;
 import moe.icyr.tfc.anvil.calc.formatter.RangeIntegerFormat;
 import moe.icyr.tfc.anvil.calc.resource.*;
-import moe.icyr.tfc.anvil.calc.util.ColorPresent;
-import moe.icyr.tfc.anvil.calc.util.ConfigUtil;
-import moe.icyr.tfc.anvil.calc.util.MessageUtil;
-import moe.icyr.tfc.anvil.calc.util.TooltipColorUtil;
+import moe.icyr.tfc.anvil.calc.util.*;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -18,6 +15,8 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
+import java.awt.image.BufferedImageOp;
+import java.awt.image.LookupOp;
 import java.util.*;
 import java.util.List;
 import java.util.function.Predicate;
@@ -42,6 +41,9 @@ public class MainFrame extends JFrame {
     private JLabel seedInputLabel;
     private JTextPane outputArea;
     private JScrollPane outputScrollPane;
+    private ImageJButton ruleLeft;
+    private ImageJButton ruleMiddle;
+    private ImageJButton ruleRight;
 
     public MainFrame() throws HeadlessException {
         this.mainFrame = this;
@@ -154,31 +156,7 @@ public class MainFrame extends JFrame {
         buttonScroll.setLocation(ConfigUtil.INSTANCE.getAnvilAssetUIOpenRecipeButtonX() * ConfigUtil.INSTANCE.getScaleUI(),
                 ConfigUtil.INSTANCE.getAnvilAssetUIOpenRecipeButtonY() * ConfigUtil.INSTANCE.getScaleUI());
         buttonScroll.setSize(new Dimension(_buttonScroll.getWidth(), _buttonScroll.getHeight()));
-        buttonScroll.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                ImageJButton source = (ImageJButton) e.getSource();
-                if (source.isEnabled()) {
-                    if (e.getButton() == MouseEvent.BUTTON1) {
-                        // 打开合成窗口，显示合成结果列表
-                        buttonScroll.setEnabled(false);
-                        openRecipeResultScreen(buttonScroll);
-                        buttonScroll.setEnabled(true);
-                    } else if (e.getButton() == MouseEvent.BUTTON3) {
-                        // 清除合成结果选择
-                        buttonScroll.setEnabled(false);
-                        source.setColorTooltips(null);
-                        source.getNowChooseRecipes().clear();
-                        BufferedImage icon = getButtonScrollIcon(null, true);
-                        if (icon != null) {
-                            source.setIcon(new ImageIcon(icon));
-                        }
-                        buttonScroll.setEnabled(true);
-                    }
-                }
-                log.debug("clicked! " + e.getButton() + " " + e.getID() + " " + source); // TODO debug
-            }
-        });
+        buttonScroll.addMouseListener(new RecipeJButtonMouseAdapter());
         this.add(buttonScroll);
         // 主合成物按钮
         buttonMainMaterial.setIcon(null);
@@ -186,10 +164,7 @@ public class MainFrame extends JFrame {
                 ConfigUtil.INSTANCE.getAnvilAssetUIOpenMaterial1ButtonY() * ConfigUtil.INSTANCE.getScaleUI());
         buttonMainMaterial.setSize(new Dimension(ConfigUtil.INSTANCE.getAnvilAssetUIOpenMaterial1ButtonWidth() * ConfigUtil.INSTANCE.getScaleUI(),
                 ConfigUtil.INSTANCE.getAnvilAssetUIOpenMaterial1ButtonHeight() * ConfigUtil.INSTANCE.getScaleUI()));
-        buttonMainMaterial.addActionListener(e -> {
-            // TODO 打开新Frame，显示可合成素材（若另一个按钮没选择素材，则显示全部可合成素材，若选择素材，则筛选显示剩余可拼凑成配方的素材）
-            log.debug("clicked! " + e.getID() + " " + ((ImageJButton) e.getSource()));
-        });
+        buttonMainMaterial.addMouseListener(new RecipeJButtonMouseAdapter());
         this.add(buttonMainMaterial);
         // 副合成物按钮
         buttonOffMaterial.setIcon(null);
@@ -197,10 +172,7 @@ public class MainFrame extends JFrame {
                 ConfigUtil.INSTANCE.getAnvilAssetUIOpenMaterial2ButtonY() * ConfigUtil.INSTANCE.getScaleUI());
         buttonOffMaterial.setSize(new Dimension(ConfigUtil.INSTANCE.getAnvilAssetUIOpenMaterial2ButtonWidth() * ConfigUtil.INSTANCE.getScaleUI(),
                 ConfigUtil.INSTANCE.getAnvilAssetUIOpenMaterial2ButtonHeight() * ConfigUtil.INSTANCE.getScaleUI()));
-        buttonOffMaterial.addActionListener(e -> {
-            // TODO 打开新Frame，显示可合成素材（若另一个按钮没选择素材，则显示全部可合成素材，若选择素材，则筛选显示剩余可拼凑成配方的素材）
-            log.debug("clicked! " + e.getID() + " " + ((ImageJButton) e.getSource()));
-        });
+        buttonOffMaterial.addMouseListener(new RecipeJButtonMouseAdapter());
         this.add(buttonOffMaterial);
         // 合成配方目标值输入框
         this.targetInput = new JFormattedTextField(RangeIntegerFormat.getInstance(0, 145, 0));
@@ -338,6 +310,30 @@ public class MainFrame extends JFrame {
         outputScrollPane.setSize(new Dimension(ConfigUtil.INSTANCE.getAnvilAssetUIBackpackWidth() * ConfigUtil.INSTANCE.getScaleUI(),
                 ConfigUtil.INSTANCE.getAnvilAssetUIBackpackHeight() * ConfigUtil.INSTANCE.getScaleUI()));
         this.add(outputScrollPane);
+        // 合成物规则左
+        this.ruleLeft = new ImageJButton();
+        ruleLeft.setIcon(null);
+        ruleLeft.setLocation(ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFramePos1X() * ConfigUtil.INSTANCE.getScaleUI(),
+                ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFramePos1Y() * ConfigUtil.INSTANCE.getScaleUI());
+        ruleLeft.setSize(new Dimension(ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNotAnyWidth() * ConfigUtil.INSTANCE.getScaleUI(),
+                ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNotAnyHeight() * ConfigUtil.INSTANCE.getScaleUI()));
+        this.add(ruleLeft);
+        // 合成物规则中
+        this.ruleMiddle = new ImageJButton();
+        ruleMiddle.setIcon(null);
+        ruleMiddle.setLocation(ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFramePos2X() * ConfigUtil.INSTANCE.getScaleUI(),
+                ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFramePos2Y() * ConfigUtil.INSTANCE.getScaleUI());
+        ruleMiddle.setSize(new Dimension(ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameAnyWidth() * ConfigUtil.INSTANCE.getScaleUI(),
+                ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameAnyHeight() * ConfigUtil.INSTANCE.getScaleUI()));
+        this.add(ruleMiddle);
+        // 合成物规则右
+        this.ruleRight = new ImageJButton();
+        ruleRight.setIcon(null);
+        ruleRight.setLocation(ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFramePos3X() * ConfigUtil.INSTANCE.getScaleUI(),
+                ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFramePos3Y() * ConfigUtil.INSTANCE.getScaleUI());
+        ruleRight.setSize(new Dimension(ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNotLastWidth() * ConfigUtil.INSTANCE.getScaleUI(),
+                ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNotLastHeight() * ConfigUtil.INSTANCE.getScaleUI()));
+        this.add(ruleRight);
     }
 
     /**
@@ -442,6 +438,9 @@ public class MainFrame extends JFrame {
                 this.buttonOffMaterial.setVisible(true);
                 this.buttonMainMaterial.setVisible(true);
                 this.buttonScroll.setVisible(true);
+                this.ruleLeft.setVisible(true);
+                this.ruleMiddle.setVisible(true);
+                this.ruleRight.setVisible(true);
                 this.mainFrame.revalidate();
                 this.mainFrame.repaint();
             });
@@ -539,7 +538,7 @@ public class MainFrame extends JFrame {
                 String mainMaterialItemId = getItemIdFromTagId(nowChooseRecipe.getInput(), nowChooseRecipe.toResourceLocationStr());
                 // 设置结果按钮
                 List<RecipeAnvil> savedRecipe = this.buttonScroll.getNowChooseRecipes();
-                if (savedRecipe.size() == 0) {
+                if (savedRecipe.isEmpty()) {
                     savedRecipe.add(nowChooseRecipe);
                 } else {
                     savedRecipe.set(0, nowChooseRecipe);
@@ -563,7 +562,7 @@ public class MainFrame extends JFrame {
                         .build());
                 // 设置主素材按钮
                 savedRecipe = this.buttonMainMaterial.getNowChooseRecipes();
-                if (savedRecipe.size() == 0) {
+                if (savedRecipe.isEmpty()) {
                     savedRecipe.add(nowChooseRecipe);
                 } else {
                     savedRecipe.set(0, nowChooseRecipe);
@@ -584,7 +583,44 @@ public class MainFrame extends JFrame {
                 // 设置副素材按钮
                 this.buttonOffMaterial.setIcon(null);
                 this.buttonOffMaterial.getNowChooseRecipes().clear();
-                // TODO 将配方的规则也带入面板、若有seed则计算target及自动计算
+                if (nowChooseRecipe.getRules().isEmpty()) {
+                    this.ruleLeft.setIcon(null);
+                    this.ruleMiddle.setIcon(null);
+                    this.ruleRight.setIcon(null);
+                    this.ruleLeft.setColorTooltips(null);
+                    this.ruleMiddle.setColorTooltips(null);
+                    this.ruleRight.setColorTooltips(null);
+                } else {
+                    String ruleLeft = nowChooseRecipe.getRules().get(0);
+                    BufferedImage ruleLeftIcon = getRuleIcon(ruleLeft);
+                    if (ruleLeftIcon != null) {
+                        this.ruleLeft.setIcon(new ImageIcon(ruleLeftIcon));
+                    }
+                    this.ruleLeft.setColorTooltips(getRuleTooltip(ruleLeft));
+                    if (nowChooseRecipe.getRules().size() > 1) {
+                        String ruleMiddle = nowChooseRecipe.getRules().get(1);
+                        BufferedImage ruleMiddleIcon = getRuleIcon(ruleMiddle);
+                        if (ruleMiddleIcon != null) {
+                            this.ruleMiddle.setIcon(new ImageIcon(ruleMiddleIcon));
+                        }
+                        this.ruleMiddle.setColorTooltips(getRuleTooltip(ruleMiddle));
+                    } else {
+                        this.ruleMiddle.setIcon(null);
+                        this.ruleMiddle.setColorTooltips(null);
+                    }
+                    if (nowChooseRecipe.getRules().size() > 2) {
+                        String ruleRight = nowChooseRecipe.getRules().get(2);
+                        BufferedImage ruleRightIcon = getRuleIcon(ruleRight);
+                        if (ruleRightIcon != null) {
+                            this.ruleRight.setIcon(new ImageIcon(ruleRightIcon));
+                        }
+                        this.ruleRight.setColorTooltips(getRuleTooltip(ruleRight));
+                    } else {
+                        this.ruleRight.setIcon(null);
+                        this.ruleRight.setColorTooltips(null);
+                    }
+                }
+                // TODO 根据配方的tier显示不同等级的锤子、若有seed则计算target、调用自动计算
                 recipeResultPanel.removeAll();
                 this.mainFrame.remove(recipeResultPanel);
                 this.outputScrollPane.setVisible(true);
@@ -594,6 +630,9 @@ public class MainFrame extends JFrame {
                 this.buttonOffMaterial.setVisible(true);
                 this.buttonMainMaterial.setVisible(true);
                 this.buttonScroll.setVisible(true);
+                this.ruleLeft.setVisible(true);
+                this.ruleMiddle.setVisible(true);
+                this.ruleRight.setVisible(true);
                 this.mainFrame.revalidate();
                 this.mainFrame.repaint();
                 log.debug("clicked! " + chooseRecipe.getNowChooseRecipes());
@@ -611,6 +650,9 @@ public class MainFrame extends JFrame {
         this.buttonOffMaterial.setVisible(false);
         this.buttonMainMaterial.setVisible(false);
         this.buttonScroll.setVisible(false);
+        this.ruleLeft.setVisible(false);
+        this.ruleMiddle.setVisible(false);
+        this.ruleRight.setVisible(false);
         this.repaint();
     }
 
@@ -797,6 +839,30 @@ public class MainFrame extends JFrame {
     }
 
     /**
+     * 获取物品显示名称
+     *
+     * @param localeId 语言key
+     * @return 显示名称
+     */
+    private static String getLocaleText(String localeId) {
+        Map<String, List<ResourceLocation>> langResources = ResourceManager.getResources((namespace, resource) -> resource instanceof Lang rlang && localeId.equals(rlang.getFullKey()));
+        String localeText = "";
+        if (!langResources.isEmpty()) {
+            for (List<ResourceLocation> ll : langResources.values()) {
+                for (ResourceLocation r : ll) {
+                    Lang lang = (Lang) r;
+                    localeText = lang.getDisplayName();
+                    break;
+                }
+            }
+        }
+        if (localeText.isBlank()) {
+            log.warn(localeId + " hasn't lang resource, it will lost display in tooltip.");
+        }
+        return localeText;
+    }
+
+    /**
      * 拼装合成配方图标按钮
      *
      * @param img 图标，可为null则无图标
@@ -927,6 +993,254 @@ public class MainFrame extends JFrame {
                 return false;
             }
         };
+    }
+
+    /**
+     * 获取规则显示文本
+     *
+     * @param ruleName 规则名称
+     * @return 显示文本
+     */
+    private List<TooltipColorUtil.TooltipColor> getRuleTooltip(String ruleName) {
+        String[] s = ruleName.split("_");
+        if (s.length < 2) {
+            log.warn("Wrong rule string: " + ruleName + ", must be [step]_[order].");
+        }
+        TooltipColorUtil.Builder builder = TooltipColorUtil.builder();
+        switch (s[0]) {
+            case "hit" -> {
+                builder.withText(getLocaleText("tfc.enum.forgestep.hit"), Color.WHITE);
+            }
+            case "hit_light" -> {
+                builder.withText(getLocaleText("tfc.enum.forgestep.hit_light"), Color.WHITE);
+            }
+            case "hit_medium" -> {
+                builder.withText(getLocaleText("tfc.enum.forgestep.hit_medium"), Color.WHITE);
+            }
+            case "hit_hard" -> {
+                builder.withText(getLocaleText("tfc.enum.forgestep.hit_hard"), Color.WHITE);
+            }
+            case "draw" -> {
+                builder.withText(getLocaleText("tfc.enum.forgestep.draw"), Color.WHITE);
+            }
+            case "punch" -> {
+                builder.withText(getLocaleText("tfc.enum.forgestep.punch"), Color.WHITE);
+            }
+            case "bend" -> {
+                builder.withText(getLocaleText("tfc.enum.forgestep.bend"), Color.WHITE);
+            }
+            case "upset" -> {
+                builder.withText(getLocaleText("tfc.enum.forgestep.upset"), Color.WHITE);
+            }
+            case "shrink" -> {
+                builder.withText(getLocaleText("tfc.enum.forgestep.shrink"), Color.WHITE);
+            }
+            default -> {
+                log.warn("Wrong rule step: " + s[0]);
+            }
+        }
+        String order = ruleName.substring(ruleName.indexOf("_") + 1);
+        switch (order) {
+            case "any" -> {
+                builder.withText(" " + getLocaleText("tfc.enum.order.any"), Color.WHITE);
+            }
+            case "last" -> {
+                builder.withText(" " + getLocaleText("tfc.enum.order.last"), Color.WHITE);
+            }
+            case "not_last" -> {
+                builder.withText(" " + getLocaleText("tfc.enum.order.not_last"), Color.WHITE);
+            }
+            case "second_last" -> {
+                builder.withText(" " + getLocaleText("tfc.enum.order.second_last"), Color.WHITE);
+            }
+            case "third_last" -> {
+                builder.withText(" " + getLocaleText("tfc.enum.order.third_last"), Color.WHITE);
+            }
+            default -> {
+                log.warn("Wrong rule order: " + order);
+            }
+        }
+        return builder.build();
+    }
+
+    /**
+     * 规则名称转换为图案
+     *
+     * @param ruleName 规则名称
+     * @return 规则图案
+     */
+    private BufferedImage getRuleIcon(String ruleName) {
+        String[] s = ruleName.split("_");
+        if (s.length < 2) {
+            log.warn("Wrong rule string: " + ruleName + ", must be [step]_[order].");
+        }
+        BufferedImage asset = getTfcAnvilAsset();
+        if (asset == null) {
+            return null;
+        }
+        String order = ruleName.substring(ruleName.indexOf("_") + 1);
+        BufferedImage frame = null;
+        switch (order) {
+            case "any" -> {
+                frame = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameAnyX(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameAnyY(),
+                        ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameAnyWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameAnyHeight());
+            }
+            case "last" -> {
+                frame = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameLastX(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameLastY(),
+                        ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameLastWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameLastHeight());
+            }
+            case "not_last" -> {
+                frame = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNotLastX(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNotLastY(),
+                        ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNotLastWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNotLastHeight());
+            }
+            case "second_last" -> {
+                frame = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNextToLastX(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNextToLastY(),
+                        ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNextToLastWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNextToLastHeight());
+            }
+            case "third_last" -> {
+                frame = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameThirdFromLastX(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameThirdFromLastY(),
+                        ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameThirdFromLastWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameThirdFromLastHeight());
+            }
+            default -> {
+                log.warn("Wrong rule order: " + order);
+            }
+        }
+        if (frame != null) {
+            BufferedImageOp replaceFrame = new LookupOp(new ColorReplacer(new Color(
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameColorRSrc(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameColorGSrc(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameColorBSrc(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameColorASrc()
+            ), new Color(
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameColorR(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameColorG(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameColorB(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameColorA()
+            )), null);
+            BufferedImageOp replaceFrameDarker = new LookupOp(new ColorReplacer(new Color(
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameDarkerColorRSrc(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameDarkerColorGSrc(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameDarkerColorBSrc(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameDarkerColorASrc()
+            ), new Color(
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameDarkerColorR(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameDarkerColorG(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameDarkerColorB(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameDarkerColorA()
+            )), null);
+            BufferedImageOp replaceFrameLighter = new LookupOp(new ColorReplacer(new Color(
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameLighterColorRSrc(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameLighterColorGSrc(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameLighterColorBSrc(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameLighterColorASrc()
+            ), new Color(
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameLighterColorR(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameLighterColorG(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameLighterColorB(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameLighterColorA()
+            )), null);
+            BufferedImageOp replaceFrameMiddle = new LookupOp(new ColorReplacer(new Color(
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameMiddleColorRSrc(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameMiddleColorGSrc(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameMiddleColorBSrc(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameMiddleColorASrc()
+            ), new Color(
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameMiddleColorR(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameMiddleColorG(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameMiddleColorB(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameMiddleColorA()
+            )), null);
+            frame = replaceFrame.filter(frame, null);
+            frame = replaceFrameDarker.filter(frame, null);
+            frame = replaceFrameLighter.filter(frame, null);
+            frame = replaceFrameMiddle.filter(frame, null);
+            frame = scaleGlobally(frame);
+            BufferedImage icon = null;
+            switch (s[0]) {
+                case "hit", "hit_medium" -> {
+                    icon = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIHitMediumX(), ConfigUtil.INSTANCE.getAnvilAssetUIHitMediumY(),
+                            ConfigUtil.INSTANCE.getAnvilAssetUIHitMediumWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIHitMediumHeight());
+                }
+                case "hit_light" -> {
+                    icon = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIHitLightX(), ConfigUtil.INSTANCE.getAnvilAssetUIHitLightY(),
+                            ConfigUtil.INSTANCE.getAnvilAssetUIHitLightWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIHitLightHeight());
+                }
+                case "hit_hard" -> {
+                    icon = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIHitHeavyX(), ConfigUtil.INSTANCE.getAnvilAssetUIHitHeavyY(),
+                            ConfigUtil.INSTANCE.getAnvilAssetUIHitHeavyWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIHitHeavyHeight());
+                }
+                case "draw" -> {
+                    icon = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIDrawX(), ConfigUtil.INSTANCE.getAnvilAssetUIDrawY(),
+                            ConfigUtil.INSTANCE.getAnvilAssetUIDrawWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIDrawHeight());
+                }
+                case "punch" -> {
+                    icon = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIPunchX(), ConfigUtil.INSTANCE.getAnvilAssetUIPunchY(),
+                            ConfigUtil.INSTANCE.getAnvilAssetUIPunchWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIPunchHeight());
+                }
+                case "bend" -> {
+                    icon = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIBendX(), ConfigUtil.INSTANCE.getAnvilAssetUIBendY(),
+                            ConfigUtil.INSTANCE.getAnvilAssetUIBendWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIBendHeight());
+                }
+                case "upset" -> {
+                    icon = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIUpsetX(), ConfigUtil.INSTANCE.getAnvilAssetUIUpsetY(),
+                            ConfigUtil.INSTANCE.getAnvilAssetUIUpsetWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIUpsetHeight());
+                }
+                case "shrink" -> {
+                    icon = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIShrinkX(), ConfigUtil.INSTANCE.getAnvilAssetUIShrinkY(),
+                            ConfigUtil.INSTANCE.getAnvilAssetUIShrinkWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIShrinkHeight());
+                }
+                default -> {
+                    log.warn("Wrong rule step: " + s[0]);
+                }
+            }
+            if (icon != null) {
+                double w = ((double) ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameWidth() * ConfigUtil.INSTANCE.getScaleUI()) / icon.getWidth();
+                double h = ((double) ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameHeight() * ConfigUtil.INSTANCE.getScaleUI()) / icon.getHeight();
+                AffineTransform transform = new AffineTransform();
+                transform.setToScale(w, h);
+                AffineTransformOp transformOp = new AffineTransformOp(transform, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
+                BufferedImage iconShrink = new BufferedImage(ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameWidth() * ConfigUtil.INSTANCE.getScaleUI(),
+                        ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameHeight() * ConfigUtil.INSTANCE.getScaleUI(), BufferedImage.TYPE_INT_ARGB);
+                icon = transformOp.filter(icon, iconShrink);
+                Graphics g = frame.getGraphics();
+                g.drawImage(icon, ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameX() * ConfigUtil.INSTANCE.getScaleUI(),
+                        ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameY() * ConfigUtil.INSTANCE.getScaleUI(), null);
+                g.dispose();
+            }
+        }
+        return frame;
+    }
+
+    /**
+     * 配方按钮点击后选择配方事件
+     */
+    private class RecipeJButtonMouseAdapter extends MouseAdapter {
+        @Override
+        public void mouseClicked(MouseEvent e) {
+            ImageJButton source = (ImageJButton) e.getSource();
+            if (source.isEnabled()) {
+                if (e.getButton() == MouseEvent.BUTTON1) {
+                    // 打开合成窗口，显示合成结果列表
+                    source.setEnabled(false);
+                    openRecipeResultScreen(source);
+                    source.setEnabled(true);
+                } else if (e.getButton() == MouseEvent.BUTTON3) {
+                    // 清除合成结果选择
+                    source.setEnabled(false);
+                    source.setColorTooltips(null);
+                    source.getNowChooseRecipes().clear();
+                    if (source == buttonScroll) {
+                        BufferedImage icon = getButtonScrollIcon(null, true);
+                        if (icon != null) {
+                            source.setIcon(new ImageIcon(icon));
+                        }
+                    } else {
+                        source.setIcon(null);
+                    }
+                    source.setEnabled(true);
+                }
+            }
+        }
     }
 
 }
