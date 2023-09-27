@@ -83,8 +83,20 @@ public class MainFrame extends JFrame {
      */
     public void loadAnvilUI() {
         BufferedImage asset = getTfcAnvilAsset();
-        if (asset == null)
+        if (asset == null) {
+            JTextArea jTextArea = new JTextArea();
+            jTextArea.setText("Please put 1.18.2 TerraFirmaCraft forge mod jar to ./mods/ folder!");
+            jTextArea.setOpaque(false);
+            jTextArea.setBackground(UIManager.getColor("Label.background"));
+            jTextArea.setForeground(Color.RED);
+            jTextArea.setWrapStyleWord(true);
+            jTextArea.setLineWrap(true);
+            jTextArea.setEditable(false);
+            jTextArea.setFocusable(false);
+            jTextArea.setFont(UIManager.getFont("Label.font"));
+            this.add(jTextArea);
             return;
+        }
         BufferedImage anvil = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIX(), ConfigUtil.INSTANCE.getAnvilAssetUIY(),
                 ConfigUtil.INSTANCE.getAnvilAssetUIWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIHeight());
         Graphics g = anvil.getGraphics();
