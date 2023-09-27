@@ -56,7 +56,7 @@ public class AssetsUtil {
             }
         }
         if (anClass == null) {
-            throw new IllegalArgumentException("Can't parse resource path " + resourcePath + " to a defined resource type.");
+            throw new IllegalArgumentException(MessageUtil.getMessage("log.load.resource.path.type.cant.match", resourcePath));
         }
         return readResourceFromData(fileName, resourcePath, resourceData, anClass);
     }
@@ -69,7 +69,6 @@ public class AssetsUtil {
      * @param resourceType 资源类型
      * @param <T>          资源类型
      * @return 资源对象
-     * @throws Exception Just use log.error(e) to print stderr.
      */
     public static <T extends ResourceLocation> T readResourceFromData(@NonNull String fileName,
                                                                       @NonNull String resourcePath,
@@ -77,7 +76,7 @@ public class AssetsUtil {
                                                                       @NonNull Class<T> resourceType)
             throws IllegalArgumentException, UnsupportedOperationException {
         if (resourcePath.endsWith("/")) {
-            throw new IllegalArgumentException("Can't parse directory to resource.");
+            throw new IllegalArgumentException(MessageUtil.getMessage("log.load.resource.path.cant.ends.with.file.separator"));
         }
         String originalPath = fileName + "!/" + resourcePath;
         // 解析文件路径前缀
@@ -90,17 +89,17 @@ public class AssetsUtil {
             // 材质包
             resourcePath = resourcePath.substring(7);
         } else {
-            throw new UnsupportedOperationException("Resource file path is not correctly or new version of minecraft? Can not resolve: " + resourcePath);
+            throw new UnsupportedOperationException(MessageUtil.getMessage("log.load.resource.path.format.is.incorrect", resourcePath));
         }
         int firstPathSeparator = resourcePath.indexOf("/");
         if (firstPathSeparator == -1) {
-            throw new IllegalArgumentException("Resource path can't resolve namespace: " + resourcePath);
+            throw new IllegalArgumentException(MessageUtil.getMessage("log.load.resource.path.cant.resolve.namespace",resourcePath));
         }
         namespace = resourcePath.substring(0, firstPathSeparator);
         resourcePath = resourcePath.substring(firstPathSeparator + 1);
         firstPathSeparator = resourcePath.indexOf("/");
         if (firstPathSeparator == -1) {
-            throw new IllegalArgumentException("Resource path can't resolve resource type: " + resourcePath);
+            throw new IllegalArgumentException(MessageUtil.getMessage("log.load.resource.path.cant.resolve.type", resourcePath));
         }
         minecraftResourceType = resourcePath.substring(0, firstPathSeparator);
         resourcePath = resourcePath.substring(firstPathSeparator + 1);
@@ -108,7 +107,7 @@ public class AssetsUtil {
         if ("textures".equals(minecraftResourceType)) {
             firstPathSeparator = resourcePath.indexOf("/");
             if (firstPathSeparator == -1) {
-                throw new IllegalArgumentException("Resource path can't resolve resource type: " + resourcePath);
+                throw new IllegalArgumentException(MessageUtil.getMessage("log.load.resource.path.cant.resolve.subtype", resourcePath));
             }
             // block colormap entity gui item misc mob_effect models painting particle etc.
             thirdType = resourcePath.substring(0, firstPathSeparator);
@@ -116,7 +115,7 @@ public class AssetsUtil {
         } else if ("tags".equals(minecraftResourceType)) {
             firstPathSeparator = resourcePath.indexOf("/");
             if (firstPathSeparator == -1) {
-                throw new IllegalArgumentException("Resource path can't resolve resource type: " + resourcePath);
+                throw new IllegalArgumentException(MessageUtil.getMessage("log.load.resource.path.cant.resolve.subtype", resourcePath));
             }
             // blocks entity_types fluids items worldgen etc.
             thirdType = resourcePath.substring(0, firstPathSeparator);
@@ -127,19 +126,23 @@ public class AssetsUtil {
         switch (minecraftResourceType) {
             case "recipes" -> {
                 if (resourceType != RecipeAnvil.class)
-                    throw new IllegalArgumentException("Resource type " + minecraftResourceType + " can't matched with " + RecipeAnvil.class.getSimpleName() + " type!");
+                    throw new IllegalArgumentException(MessageUtil.getMessage("log.load.resource.path.mismatch.internal.type",
+                            minecraftResourceType, RecipeAnvil.class.getSimpleName()));
             }
             case "textures" -> {
                 if (resourceType != Texture.class)
-                    throw new IllegalArgumentException("Resource type " + minecraftResourceType + " can't matched with " + Texture.class.getSimpleName() + " type!");
+                    throw new IllegalArgumentException(MessageUtil.getMessage("log.load.resource.path.mismatch.internal.type",
+                            minecraftResourceType, Texture.class.getSimpleName()));
             }
             case "tags" -> {
                 if (resourceType != Tag.class)
-                    throw new IllegalArgumentException("Resource type " + minecraftResourceType + " can't matched with " + Tag.class.getSimpleName() + " type!");
+                    throw new IllegalArgumentException(MessageUtil.getMessage("log.load.resource.path.mismatch.internal.type",
+                            minecraftResourceType, Tag.class.getSimpleName()));
             }
             case "lang" -> {
                 if (resourceType != Lang.class)
-                    throw new IllegalArgumentException("Resource type " + minecraftResourceType + " can't matched with " + Lang.class.getSimpleName() + " type!");
+                    throw new IllegalArgumentException(MessageUtil.getMessage("log.load.resource.path.mismatch.internal.type",
+                            minecraftResourceType, Lang.class.getSimpleName()));
             }
         }
         // 去除文件名后缀
@@ -156,7 +159,7 @@ public class AssetsUtil {
                 recipe.setPath(resourcePath);
                 return recipe;
             } catch (JsonProcessingException e) {
-                throw new IllegalArgumentException("Json process error found on " + namespace + ":" + resourcePath + " recipe file.", e);
+                throw new IllegalArgumentException(MessageUtil.getMessage("log.load.resource.recipe.json.process.error", namespace + ":" + resourcePath), e);
             }
         } else if (resourceType == Texture.class) {
             try {
@@ -170,10 +173,10 @@ public class AssetsUtil {
                 setTextureType.invoke(t, thirdType);
                 return t;
             } catch (IOException e) {
-                throw new IllegalArgumentException("IOException when read image on " + namespace + ":" + resourcePath + ".", e);
-            } catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException |
-                     InvocationTargetException e) {
-                throw new IllegalArgumentException("If software changed something but util missed?", e);
+                throw new IllegalArgumentException(MessageUtil.getMessage("log.load.resource.texture.io.error", namespace + ":" + resourcePath), e);
+            } catch (NoSuchMethodException | SecurityException | InstantiationException |
+                     IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+                throw new IllegalArgumentException(MessageUtil.getMessage("log.load.resource.reflect.error"), e);
             }
         } else if (resourceType == Tag.class) {
             try {
@@ -186,9 +189,10 @@ public class AssetsUtil {
                 setTagType.invoke(t, thirdType);
                 return t;
             } catch (JsonProcessingException e) {
-                throw new IllegalArgumentException("Json process error found on " + namespace + ":" + resourcePath + " tag file.", e);
-            } catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-                throw new IllegalArgumentException("If software changed something but util missed?", e);
+                throw new IllegalArgumentException(MessageUtil.getMessage("log.load.resource.tag.json.process.error", namespace + ":" + resourcePath), e);
+            } catch (NoSuchMethodException | SecurityException | IllegalAccessException |
+                     IllegalArgumentException | InvocationTargetException e) {
+                throw new IllegalArgumentException(MessageUtil.getMessage("log.load.resource.reflect.error"), e);
             }
         } else if (resourceType == Lang.class) {
             try {
@@ -222,10 +226,10 @@ public class AssetsUtil {
                 //noinspection unchecked
                 return (T) langSets;
             } catch (JsonProcessingException e) {
-                throw new IllegalArgumentException("Json process error found on " + namespace + ":" + resourcePath + " lang file.", e);
+                throw new IllegalArgumentException(MessageUtil.getMessage("log.load.resource.lang.json.process.error", namespace + ":" + resourcePath), e);
             }
         } else {
-            throw new UnsupportedOperationException("Resource type " + resourceType.getName() + " is not supported.");
+            throw new UnsupportedOperationException(MessageUtil.getMessage("log.load.resource.unsupported.asset.type", resourceType.getName()));
         }
     }
 

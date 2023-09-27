@@ -127,7 +127,7 @@ public class GameTooltip extends JToolTip {
                 if (i < colors.size() - 1 && "\n".equals(colors.get(i + 1).getText())) {
                     double thisLineHeight = derivedFont.createGlyphVector(metrics.getFontRenderContext(), c.getText()).getVisualBounds().getHeight();
                     afterX = ConfigUtil.INSTANCE.getTooltipMargin() * ConfigUtil.INSTANCE.getTooltipScale();
-                    afterY += thisLineHeight + ConfigUtil.INSTANCE.getTooltipMargin() * ConfigUtil.INSTANCE.getTooltipScale();
+                    afterY += (float) (thisLineHeight + ConfigUtil.INSTANCE.getTooltipMargin() * ConfigUtil.INSTANCE.getTooltipScale());
                     i++;
                 } else {
                     int thisLineWidth = metrics.stringWidth(c.getText());

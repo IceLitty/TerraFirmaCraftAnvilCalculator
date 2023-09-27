@@ -5,6 +5,7 @@ import moe.icyr.tfc.anvil.calc.resource.ResourceLocation;
 import moe.icyr.tfc.anvil.calc.resource.ResourceManager;
 import moe.icyr.tfc.anvil.calc.util.AssetsUtil;
 import moe.icyr.tfc.anvil.calc.util.JarUtil;
+import moe.icyr.tfc.anvil.calc.util.MessageUtil;
 import org.tomlj.Toml;
 import org.tomlj.TomlArray;
 import org.tomlj.TomlParseResult;
@@ -32,7 +33,7 @@ public class AssetsLoader {
     public void loadMods() {
         // 散装Debug时为项目根路径，打包运行后为exe所在路径
         File runLocation = new File(System.getProperty("user.dir")).getAbsoluteFile();
-        log.debug("Application working directory: " + runLocation);
+        log.debug(MessageUtil.getMessage("log.load.work.dir", runLocation));
         File modsFolder = new File(runLocation, "mods");
         if (!modsFolder.exists()) {
             //noinspection unused
@@ -41,7 +42,7 @@ public class AssetsLoader {
         if (modsFolder.exists() && modsFolder.isDirectory() && modsFolder.canRead()) {
             File[] files = modsFolder.listFiles();
             if (files == null || files.length == 0) {
-                log.warn("Their are no jar file in mods folder! Can't load TFC assets.");
+                log.warn(MessageUtil.getMessage("ui.label.no.tfc.jar"));
                 return;
             }
             for (File mod : files) {
@@ -55,18 +56,18 @@ public class AssetsLoader {
                 try {
                     modsToml = JarUtil.readFileFromJar(mod, "META-INF/mods.toml");
                 } catch (FileNotFoundException e) {
-                    log.warn("Not found META-INF/mods.toml file in mod jar: " + mod.getPath() + ". May be it's a minecraft client jar or resource / data pack? Loading...");
+                    log.warn(MessageUtil.getMessage("log.load.mod.cant.find.mod.toml", mod.getPath()));
                     // 也许是mc本体
                     loadMods(mod, name -> otherModsLoadPattern.matcher(name).matches());
                     continue;
                 } catch (IOException e) {
-                    log.error("Error when loading mod file: " + mod.getPath(), e);
+                    log.error(MessageUtil.getMessage("log.load.mod.io.error", mod.getPath()), e);
                     continue;
                 }
                 TomlParseResult tomlParseResult = Toml.parse(new String(modsToml, StandardCharsets.UTF_8));
                 if (!tomlParseResult.hasErrors()) {
                     TomlArray mods = tomlParseResult.getArray("mods");
-                    if (mods != null && mods.size() > 0) {
+                    if (mods != null && !mods.isEmpty()) {
                         String modId = mods.getTable(0).getString("modId");
                         String displayName = mods.getTable(0).getString("displayName");
                         if (modId != null && !modId.isBlank() && displayName != null && !displayName.isBlank()) {
@@ -97,7 +98,7 @@ public class AssetsLoader {
         try {
             modMod = JarUtil.fullyLoadInMemory(mod, ifFileNeeded);
         } catch (IOException e) {
-            log.error("Load mod file failed: " + mod.getPath(), e);
+            log.error(MessageUtil.getMessage("log.load.mod.entry.failed", mod.getPath()), e);
             return;
         }
         for (Map.Entry<String, byte[]> entry : modMod.entrySet()) {
@@ -105,11 +106,11 @@ public class AssetsLoader {
             try {
                 resourceLocation = AssetsUtil.readResourceFromData(mod.getName(), entry.getKey(), entry.getValue());
             } catch (Exception e) {
-                log.error("Load resource error:", e);
+                log.error(MessageUtil.getMessage("log.load.mod.resource.error"), e);
                 continue;
             }
             if (!ResourceManager.putResource(resourceLocation)) {
-                log.warn("Resource " + resourceLocation + " can't use.");
+                log.warn(MessageUtil.getMessage("log.load.mod.cant.store", resourceLocation));
             }
         }
     }

@@ -55,55 +55,19 @@ public class TooltipColorUtil {
         }
         public TooltipColorUtil.Builder withText(String text) {
             return withText(text, null);
-//            if (text == null || text.length() == 0) {
-//                return this;
-//            }
-//            if (text.contains("\n")) {
-//                String[] split = text.split("\n");
-//                for (int i = 0; i < split.length; i++) {
-//                    String s = split[i];
-//                    if (s.length() != 0) {
-//                        this.color.add(new TooltipColor(s));
-//                    }
-//                    if (i != split.length - 1 || text.endsWith("\n")) {
-//                        this.color.add(new TooltipColor("\n"));
-//                    }
-//                }
-//            } else {
-//                this.color.add(new TooltipColor(text));
-//            }
-//            return this;
         }
         public TooltipColorUtil.Builder withText(String text, Color color) {
             return withText(text, color, false, false);
-//            if (text == null || text.length() == 0) {
-//                return this;
-//            }
-//            if (text.contains("\n")) {
-//                String[] split = text.split("\n");
-//                for (int i = 0; i < split.length; i++) {
-//                    String s = split[i];
-//                    if (s.length() != 0) {
-//                        this.color.add(new TooltipColor(s, color));
-//                    }
-//                    if (i != split.length - 1 || text.endsWith("\n")) {
-//                        this.color.add(new TooltipColor("\n"));
-//                    }
-//                }
-//            } else {
-//                this.color.add(new TooltipColor(text, color));
-//            }
-//            return this;
         }
         public TooltipColorUtil.Builder withText(String text, Color color, boolean bold, boolean italic) {
-            if (text == null || text.length() == 0) {
+            if (text == null || text.isEmpty()) {
                 return this;
             }
             if (text.contains("\n")) {
                 String[] split = text.split("\n");
                 for (int i = 0; i < split.length; i++) {
                     String s = split[i];
-                    if (s.length() != 0) {
+                    if (!s.isEmpty()) {
                         this.color.add(new TooltipColor(s, color, bold, italic));
                     }
                     if (i != split.length - 1 || text.endsWith("\n")) {

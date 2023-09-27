@@ -43,7 +43,7 @@ public class JarUtil {
             }
         }
         if (os == null) {
-            throw new FileNotFoundException("Not found " + fileFullName + " in " + jarFile.getPath() + ".");
+            throw new FileNotFoundException(MessageUtil.getMessage("log.load.jar.file.not.found", fileFullName, jarFile.getPath()));
         }
         return os.toByteArray();
     }

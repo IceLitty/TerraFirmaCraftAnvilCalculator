@@ -53,30 +53,4 @@ public class RangeIntegerFormat extends DecimalFormat {
         }
     }
 
-//    @Override
-//    public StringBuffer format(Object obj, @NonNull StringBuffer toAppendTo, @NonNull FieldPosition pos) {
-//        if (obj == null || String.valueOf(obj).trim().length() == 0) {
-//            return null;
-//        }
-//        String objStr = String.valueOf(obj);
-//        boolean negative = objStr.startsWith("-");
-//        objStr = objStr.replaceAll("\\D", "");
-//        if (negative) {
-//            objStr = "-" + objStr;
-//        }
-//        long dest = Long.parseLong(objStr);
-//        if (dest > max) {
-//            dest = max;
-//        } else if (dest < min) {
-//            dest = min;
-//        }
-//        return new StringBuffer(String.valueOf(dest));
-//    }
-//
-//    @Override
-//    public Object parseObject(String source, @NonNull ParsePosition pos) {
-//        log.info("{} {}", source, pos);
-//        return source;
-//    }
-
 }

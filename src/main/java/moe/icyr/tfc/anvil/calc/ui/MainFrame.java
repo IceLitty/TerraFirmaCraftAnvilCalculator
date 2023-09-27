@@ -7,11 +7,8 @@ import moe.icyr.tfc.anvil.calc.resource.*;
 import moe.icyr.tfc.anvil.calc.util.*;
 
 import javax.swing.*;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
@@ -48,7 +45,7 @@ public class MainFrame extends JFrame {
     public MainFrame() throws HeadlessException {
         this.mainFrame = this;
         // 加载配置文件
-        log.debug("Config " + ConfigUtil.INSTANCE + " loaded.");
+        log.debug(MessageUtil.getMessage("log.config.loaded", ConfigUtil.INSTANCE));
         AssetsLoader assetsLoader = new AssetsLoader();
         // 加载MOD资源包材质包
         assetsLoader.loadMods();
@@ -85,7 +82,7 @@ public class MainFrame extends JFrame {
         BufferedImage asset = getTfcAnvilAsset();
         if (asset == null) {
             JTextArea jTextArea = new JTextArea();
-            jTextArea.setText("Please put 1.18.2 TerraFirmaCraft forge mod jar to ./mods/ folder!");
+            jTextArea.setText(MessageUtil.getMessage("ui.label.no.tfc.jar"));
             jTextArea.setOpaque(false);
             jTextArea.setBackground(UIManager.getColor("Label.background"));
             jTextArea.setForeground(Color.RED);
@@ -196,22 +193,19 @@ public class MainFrame extends JFrame {
         targetInput.setLocation(ConfigUtil.INSTANCE.getScaleUI(), ConfigUtil.INSTANCE.getScaleUI());
         targetInput.setSize(new Dimension((ConfigUtil.INSTANCE.getAnvilAssetUIInputTargetWidth() - 2) * ConfigUtil.INSTANCE.getScaleUI(),
                 (ConfigUtil.INSTANCE.getAnvilAssetUIInputTargetHeight() - 2) * ConfigUtil.INSTANCE.getScaleUI()));
-        targetInput.getDocument().addDocumentListener(new DocumentListener() {
-            // TODO 自动执行计算
+        targetInput.addFocusListener(new FocusListener() {
+            private String textGet = null;
             @Override
-            public void insertUpdate(DocumentEvent e) {
-                if (!targetInput.getText().isBlank()) {
-                    log.debug("changed! " + targetInput.getText());
-                }
+            public void focusGained(FocusEvent e) {
+                textGet = ((JTextField) e.getSource()).getText();
             }
             @Override
-            public void removeUpdate(DocumentEvent e) {
-                if (!targetInput.getText().isBlank()) {
-                    log.debug("changed! " + targetInput.getText());
+            public void focusLost(FocusEvent e) {
+                String target = targetInput.getText();
+                if (target != null && !target.isBlank() && !target.equals(textGet)) {
+                    log.debug("changed! " + target);
+                    // TODO 自动执行计算
                 }
-            }
-            @Override
-            public void changedUpdate(DocumentEvent e) {
             }
         });
         BufferedImage targetInputImg = new BufferedImage(ConfigUtil.INSTANCE.getAnvilAssetUIInputTargetNowWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIInputTargetNowHeight(), BufferedImage.TYPE_INT_ARGB);
@@ -235,22 +229,19 @@ public class MainFrame extends JFrame {
         targetNowInput.setLocation(ConfigUtil.INSTANCE.getScaleUI(), ConfigUtil.INSTANCE.getScaleUI());
         targetNowInput.setSize(new Dimension((ConfigUtil.INSTANCE.getAnvilAssetUIInputTargetNowWidth() - 2) * ConfigUtil.INSTANCE.getScaleUI(),
                 (ConfigUtil.INSTANCE.getAnvilAssetUIInputTargetNowHeight() - 2) * ConfigUtil.INSTANCE.getScaleUI()));
-        targetNowInput.getDocument().addDocumentListener(new DocumentListener() {
-            // TODO 自动执行计算
+        targetNowInput.addFocusListener(new FocusListener() {
+            private String textGet = null;
             @Override
-            public void insertUpdate(DocumentEvent e) {
-                if (!targetNowInput.getText().isBlank()) {
-                    log.debug("changed! " + targetNowInput.getText());
-                }
+            public void focusGained(FocusEvent e) {
+                textGet = ((JTextField) e.getSource()).getText();
             }
             @Override
-            public void removeUpdate(DocumentEvent e) {
-                if (!targetNowInput.getText().isBlank()) {
-                    log.debug("changed! " + targetNowInput.getText());
+            public void focusLost(FocusEvent e) {
+                String targetNow = targetNowInput.getText();
+                if (targetNow != null && !targetNow.isBlank() && !targetNow.equals(textGet)) {
+                    log.debug("changed! " + targetNow);
+                    // TODO 自动执行计算
                 }
-            }
-            @Override
-            public void changedUpdate(DocumentEvent e) {
             }
         });
         BufferedImage targetNowInputImg = new BufferedImage(ConfigUtil.INSTANCE.getAnvilAssetUIInputTargetWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIInputTargetHeight(), BufferedImage.TYPE_INT_ARGB);
@@ -274,22 +265,23 @@ public class MainFrame extends JFrame {
         seedInput.setLocation(ConfigUtil.INSTANCE.getScaleUI(), ConfigUtil.INSTANCE.getScaleUI());
         seedInput.setSize(new Dimension((ConfigUtil.INSTANCE.getAnvilAssetUIInputSeedWidth() - 2) * ConfigUtil.INSTANCE.getScaleUI(),
                 (ConfigUtil.INSTANCE.getAnvilAssetUIInputSeedHeight() - 2) * ConfigUtil.INSTANCE.getScaleUI()));
-        seedInput.getDocument().addDocumentListener(new DocumentListener() {
-            // TODO 重新计算target值，自动执行计算
+        seedInput.addFocusListener(new FocusListener() {
+            private String textGet = null;
             @Override
-            public void insertUpdate(DocumentEvent e) {
-                if (!seedInput.getText().isBlank()) {
-                    log.debug("changed! " + seedInput.getText());
-                }
+            public void focusGained(FocusEvent e) {
+                textGet = ((JTextField) e.getSource()).getText();
             }
             @Override
-            public void removeUpdate(DocumentEvent e) {
-                if (!seedInput.getText().isBlank()) {
-                    log.debug("changed! " + seedInput.getText());
+            public void focusLost(FocusEvent e) {
+                String seed = seedInput.getText();
+                if (seed != null && !seed.isBlank() && !seed.equals(textGet)) {
+                    List<RecipeAnvil> savedRecipe = buttonScroll.getNowChooseRecipes();
+                    if (!savedRecipe.isEmpty()) {
+                        int target = calcTargetFromSeed(savedRecipe.get(0), seed);
+                        targetInput.setText(String.valueOf(target));
+                        // TODO 自动执行计算
+                    }
                 }
-            }
-            @Override
-            public void changedUpdate(DocumentEvent e) {
             }
         });
         BufferedImage seedInputImg = new BufferedImage(ConfigUtil.INSTANCE.getAnvilAssetUIInputSeedWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIInputSeedHeight(), BufferedImage.TYPE_INT_ARGB);
@@ -439,7 +431,7 @@ public class MainFrame extends JFrame {
         if (backButton != null) {
             lastButtonX += backButton.getWidth() + ConfigUtil.INSTANCE.getScaleUI();
             backButton.setLocation(lastButtonX, lastButtonY);
-            backButton.setColorTooltips(TooltipColorUtil.builder().withText("Return to anvil frame", ColorPresent.getTooltipItemName()).build());
+            backButton.setColorTooltips(TooltipColorUtil.builder().withText(MessageUtil.getMessage("ui.choose.button.back.title"), ColorPresent.getTooltipItemName()).build());
             backButton.addActionListener(e -> {
                 recipeResultPanel.removeAll();
                 this.mainFrame.remove(recipeResultPanel);
@@ -463,17 +455,17 @@ public class MainFrame extends JFrame {
             String itemId;
             if (sourceButton == this.buttonScroll) {
                 if (recipe.getResult() == null) {
-                    log.error("Recipe " + recipe.toResourceLocationStr() + " hasn't result list, can't add in choose menu.");
+                    log.error(MessageUtil.getMessage("log.load.wrong.recipe.no.result", recipe.toResourceLocationStr()));
                     continue;
                 }
                 itemId = recipe.getResult().gotItemId();
                 if (itemId == null || itemId.isBlank()) {
-                    log.error("Recipe " + recipe.toResourceLocationStr() + " has an empty result list, can't add in choose menu.");
+                    log.error(MessageUtil.getMessage("log.load.wrong.recipe.no.result.item", recipe.toResourceLocationStr()));
                 }
             } else if (sourceButton == this.buttonMainMaterial) {
                 itemId = getItemIdFromTagId(recipe.getInput(), recipe.toResourceLocationStr());
                 if (itemId == null || itemId.isBlank()) {
-                    log.error("Recipe " + recipe.toResourceLocationStr() + " has an empty input ingredient, can't add in choose menu.");
+                    log.error(MessageUtil.getMessage("log.load.wrong.recipe.no.input.item", recipe.toResourceLocationStr()));
                 }
             } else if (sourceButton == this.buttonOffMaterial) {
                 continue;
@@ -518,7 +510,7 @@ public class MainFrame extends JFrame {
                 img = texture.getImg();
             } else {
                 img = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
-                textureCantFindReason = "Texture not found by itemId!";
+                textureCantFindReason = MessageUtil.getMessage("ui.tooltip.texture.not.found");
             }
             ImageJButton recipeButton = makeRecipeImageButton(img, recipe);
             if (recipeButton == null) {
@@ -537,9 +529,9 @@ public class MainFrame extends JFrame {
             recipeButton.setColorTooltips(TooltipColorUtil.builder()
                     .withText(itemName, ColorPresent.getTooltipItemName())
                     .withNewLine().withText(itemId, ColorPresent.getTooltipItemDesc())
-                    .withNewLine().withText("Mod: ", ColorPresent.getTooltipItemDesc()).withText(ResourceManager.getModDisplayNameByModId(itemNamespace), ColorPresent.getTooltipModId(), false, true)
+                    .withNewLine().withText(MessageUtil.getMessage("ui.tooltip.mod.is"), ColorPresent.getTooltipItemDesc()).withText(ResourceManager.getModDisplayNameByModId(itemNamespace), ColorPresent.getTooltipModId(), false, true)
                     .withText(!fullRecipeDesc.isBlank() ? null : "\n" + fullRecipeDesc, ColorPresent.getTooltipItemDesc())
-                    .withNewLine().withText("Recipe from: " + recipe.toResourceLocationStr(), ColorPresent.getTooltipItemDesc())
+                    .withNewLine().withText(MessageUtil.getMessage("ui.tooltip.recipe.from") + recipe.toResourceLocationStr(), ColorPresent.getTooltipItemDesc())
                     .withText(textureCantFindReason == null ? null : "\n" + textureCantFindReason, Color.RED)
                     .build());
             recipeButton.addActionListener(e -> {
@@ -568,9 +560,9 @@ public class MainFrame extends JFrame {
                 this.buttonScroll.setColorTooltips(TooltipColorUtil.builder()
                         .withText(resultItemName, ColorPresent.getTooltipItemName())
                         .withNewLine().withText(resultItemId, ColorPresent.getTooltipItemDesc())
-                        .withNewLine().withText("Mod: ", ColorPresent.getTooltipItemDesc()).withText(ResourceManager.getModDisplayNameByModId(resultItemId.split(":")[0]), ColorPresent.getTooltipModId(), false, true)
+                        .withNewLine().withText(MessageUtil.getMessage("ui.tooltip.mod.is"), ColorPresent.getTooltipItemDesc()).withText(ResourceManager.getModDisplayNameByModId(resultItemId.split(":")[0]), ColorPresent.getTooltipModId(), false, true)
                         .withText(!finalFullRecipeDesc.isBlank() ? null : "\n" + finalFullRecipeDesc, ColorPresent.getTooltipItemDesc())
-                        .withNewLine().withText("Recipe from: " + recipe.toResourceLocationStr(), ColorPresent.getTooltipItemDesc())
+                        .withNewLine().withText(MessageUtil.getMessage("ui.tooltip.recipe.from") + recipe.toResourceLocationStr(), ColorPresent.getTooltipItemDesc())
                         .build());
                 // 设置主素材按钮
                 savedRecipe = this.buttonMainMaterial.getNowChooseRecipes();
@@ -589,8 +581,8 @@ public class MainFrame extends JFrame {
                 this.buttonMainMaterial.setColorTooltips(TooltipColorUtil.builder()
                         .withText(inputMainItemName, ColorPresent.getTooltipItemName())
                         .withNewLine().withText(mainMaterialItemId, ColorPresent.getTooltipItemDesc())
-                        .withNewLine().withText("Mod: ", ColorPresent.getTooltipItemDesc()).withText(ResourceManager.getModDisplayNameByModId(mainMaterialItemId.split(":")[0]), ColorPresent.getTooltipModId(), false, true)
-                        .withNewLine().withText("Recipe from: " + recipe.toResourceLocationStr(), ColorPresent.getTooltipItemDesc())
+                        .withNewLine().withText(MessageUtil.getMessage("ui.tooltip.mod.is"), ColorPresent.getTooltipItemDesc()).withText(ResourceManager.getModDisplayNameByModId(mainMaterialItemId.split(":")[0]), ColorPresent.getTooltipModId(), false, true)
+                        .withNewLine().withText(MessageUtil.getMessage("ui.tooltip.recipe.from") + recipe.toResourceLocationStr(), ColorPresent.getTooltipItemDesc())
                         .build());
                 // 设置副素材按钮
                 this.buttonOffMaterial.setIcon(null);
@@ -632,7 +624,17 @@ public class MainFrame extends JFrame {
                         this.ruleRight.setColorTooltips(null);
                     }
                 }
-                // TODO 根据配方的tier显示不同等级的锤子、若有seed则计算target、调用自动计算
+                // TODO 根据配方的tier显示不同等级的锤子
+                String seed = this.seedInput.getText();
+                if (seed != null && !seed.isBlank()) {
+                    int target = calcTargetFromSeed(nowChooseRecipe, seed);
+                    this.targetInput.setText(String.valueOf(target));
+                }
+                this.targetNowInput.setText("0");
+                String target = this.targetInput.getText();
+                if (target != null && !"0".equals(target)) {
+                    calcResults();
+                }
                 recipeResultPanel.removeAll();
                 this.mainFrame.remove(recipeResultPanel);
                 this.outputScrollPane.setVisible(true);
@@ -647,7 +649,6 @@ public class MainFrame extends JFrame {
                 this.ruleRight.setVisible(true);
                 this.mainFrame.revalidate();
                 this.mainFrame.repaint();
-                log.debug("clicked! " + chooseRecipe.getNowChooseRecipes());
             });
             recipeResultScrollPanePanel.add(recipeButton);
         }
@@ -669,6 +670,23 @@ public class MainFrame extends JFrame {
     }
 
     /**
+     * TODO 通过配方和地图种子获取配方种子，通过配方种子计算配方目标值
+     *
+     * @param recipe 配方
+     * @param seed   地图种子
+     * @return 配方目标
+     */
+    private static int calcTargetFromSeed(ResourceLocation recipe, String seed) {
+        return 0;
+    }
+
+    /**
+     * TODO 读取UI中的target和rule，调用计算方法完成配方操作计算
+     */
+    private void calcResults() {
+    }
+
+    /**
      * 通过TagId获取物品Id
      *
      * @param tagId    TagId
@@ -680,19 +698,19 @@ public class MainFrame extends JFrame {
         if (tagId != null) {
             Map<String, List<ResourceLocation>> tags = ResourceManager.getResources((n, r) -> r instanceof Tag && tagId.equals(r.toResourceLocationStr()));
             if (tags.isEmpty()) {
-                log.warn("Can't find item from tag " + tagId + " used by " + sourceId + ", will be display blank icon.");
+                log.warn(MessageUtil.getMessage("log.func.tag.id.not.found", tagId, sourceId));
             } else {
                 List<ResourceLocation> rl = new ArrayList<>();
                 tags.values().forEach(rl::addAll);
                 if (rl.isEmpty()) {
-                    log.warn("Can't find item from tag " + tagId + " used by " + sourceId + ", will be display blank icon.");
+                    log.warn(MessageUtil.getMessage("log.func.tag.id.not.found", tagId, sourceId));
                 } else if (rl.size() > 1) {
                     String join = tags.values().stream().map(rll -> rll.stream().map(ResourceLocation::getOriginalPath).collect(Collectors.joining(", "))).collect(Collectors.joining(", "));
-                    log.warn("Tag " + tagId + " has more than 1 values used by " + sourceId + " ([" + join + "]), will be display blank icon.");
+                    log.warn(MessageUtil.getMessage("log.func.tag.id.found.more.than.one", tagId, sourceId, join));
                 } else {
                     List<String> tagVals = ((Tag) rl.get(0)).getValues();
                     if (tagVals == null || tagVals.size() != 1) {
-                        log.warn("Tag " + tagId + " has empty or more than 1 values used by " + sourceId + ", will be display blank icon.");
+                        log.warn(MessageUtil.getMessage("log.func.tag.id.content.has.empty.or.more.than.one", tagId, sourceId));
                     } else {
                         itemId = tagVals.get(0);
                     }
@@ -749,30 +767,30 @@ public class MainFrame extends JFrame {
             Map<String, List<ResourceLocation>> textures = ResourceManager.getResources((n, r) ->
                     r instanceof Texture rt && ("item".equals(rt.getTextureType()) || "block".equals(rt.getTextureType())) && finalItemId.equals(r.toResourceLocationStr()) && rt.getImg() != null);
             if (textures.isEmpty()) {
-                log.warn("Can't find " + itemId + " texture from " + sourceId + ", will be display blank icon.");
+                log.warn(MessageUtil.getMessage("log.func.texture.item.id.not.found", itemId, sourceId));
             } else {
                 if (textures.size() > 1) {
                     List<ResourceLocation> texturesTypeItem = new ArrayList<>();
                     List<ResourceLocation> texturesTypeBlock = new ArrayList<>();
-                    textures.values().forEach(rll -> rll.forEach(rllr -> {
-                        Texture rllr1 = (Texture) rllr;
-                        if ("item".equals(rllr1.getTextureType())) {
-                            texturesTypeItem.add(rllr1);
-                        } else if ("block".equals(rllr1.getTextureType())) {
-                            texturesTypeBlock.add(rllr1);
+                    textures.values().forEach(rll -> rll.forEach(rlr -> {
+                        Texture _rlr = (Texture) rlr;
+                        if ("item".equals(_rlr.getTextureType())) {
+                            texturesTypeItem.add(_rlr);
+                        } else if ("block".equals(_rlr.getTextureType())) {
+                            texturesTypeBlock.add(_rlr);
                         }
                     }));
                     if (texturesTypeItem.size() == 1) {
                         ResourceLocation found = texturesTypeItem.get(0);
-                        log.warn("Find " + itemId + " textures more than 1 from " + sourceId + ", but it contain only 1 item texture, UI will use it.");
+                        log.warn(MessageUtil.getMessage("log.func.texture.item.id.found.more.than.one.with.out.item.prefix", itemId, sourceId));
                         return (Texture) found;
                     } else if (texturesTypeBlock.size() == 1) {
                         ResourceLocation found = texturesTypeBlock.get(0);
-                        log.warn("Find " + itemId + " textures more than 1 from " + sourceId + ", but it contain only 1 block texture, UI will use it.");
+                        log.warn(MessageUtil.getMessage("log.func.texture.item.id.found.more.than.one.with.out.block.prefix", itemId, sourceId));
                         return (Texture) found;
                     } else {
                         String join = textures.values().stream().map(rll -> rll.stream().map(ResourceLocation::getOriginalPath).collect(Collectors.joining(", "))).collect(Collectors.joining(", "));
-                        log.warn("Find " + itemId + " textures more than 1 from " + sourceId + " ([" + join + "]), will be display blank icon.");
+                        log.warn(MessageUtil.getMessage("log.func.texture.item.id.found.more.than.one.2", itemId, sourceId, join));
                     }
                 } else {
                     Iterator<String> it = textures.keySet().iterator();
@@ -780,7 +798,7 @@ public class MainFrame extends JFrame {
                     boolean b = it.hasNext();
                     List<ResourceLocation> rll = textures.get(it.next());
                     if (rll.isEmpty()) {
-                        log.warn("Can't find " + itemId + " texture from " + sourceId + " result item, will be display blank icon.");
+                        log.warn(MessageUtil.getMessage("log.func.texture.item.id.found.more.than.one", itemId, sourceId));
                     } else if (rll.size() > 1) {
                         List<ResourceLocation> texturesTypeItem = new ArrayList<>();
                         List<ResourceLocation> texturesTypeBlock = new ArrayList<>();
@@ -794,15 +812,15 @@ public class MainFrame extends JFrame {
                         });
                         if (texturesTypeItem.size() == 1) {
                             ResourceLocation found = texturesTypeItem.get(0);
-                            log.warn("Find " + itemId + " textures more than 1 from " + sourceId + ", but it contain only 1 item texture, UI will use it.");
+                            log.warn(MessageUtil.getMessage("log.func.texture.item.id.found.more.than.one.with.out.item.prefix", itemId, sourceId));
                             return (Texture) found;
                         } else if (texturesTypeBlock.size() == 1) {
                             ResourceLocation found = texturesTypeBlock.get(0);
-                            log.warn("Find " + itemId + " textures more than 1 from " + sourceId + ", but it contain only 1 block texture, UI will use it.");
+                            log.warn(MessageUtil.getMessage("log.func.texture.item.id.found.more.than.one.with.out.block.prefix", itemId, sourceId));
                             return (Texture) found;
                         } else {
                             String join = rll.stream().map(ResourceLocation::getOriginalPath).collect(Collectors.joining(", "));
-                            log.warn("Find " + itemId + " textures more than 1 from " + sourceId + " ([" + join + "]), will be display blank icon.");
+                            log.warn(MessageUtil.getMessage("log.func.texture.item.id.found.more.than.one.2", itemId, sourceId, join));
                         }
                     } else {
                         for (ResourceLocation v : rll) {
@@ -828,12 +846,15 @@ public class MainFrame extends JFrame {
             itemId = getItemIdFromTagId(tagId, sourceId);
         }
         if (itemId == null) {
-            log.warn("Recipe " + sourceId + " call getItemDisplayName function but with null itemId, it will lost name display in tooltip.");
+            log.warn(MessageUtil.getMessage("log.func.i18n.use.empty.item.id", sourceId));
             return "";
         }
-        String blockNameKey = "block." + itemId.replace(":", ".").replace("/", ".");
-        String itemNameKey = "item." + itemId.replace(":", ".").replace("/", ".");
-        Map<String, List<ResourceLocation>> langResources = ResourceManager.getResources((namespace, resource) -> resource instanceof Lang rlang && (blockNameKey.equals(rlang.getFullKey()) || itemNameKey.equals(rlang.getFullKey())));
+        String itemIdWithoutNamespace = itemId.replace(":", ".").replace("/", ".");
+        String blockNameKey = "block." + itemIdWithoutNamespace;
+        String itemNameKey = "item." + itemIdWithoutNamespace;
+        Map<String, List<ResourceLocation>> langResources =
+                ResourceManager.getResources((namespace, resource) -> resource instanceof Lang rlang &&
+                        (blockNameKey.equals(rlang.getFullKey()) || itemNameKey.equals(rlang.getFullKey())));
         String itemName = "";
         if (!langResources.isEmpty()) {
             for (List<ResourceLocation> ll : langResources.values()) {
@@ -845,7 +866,7 @@ public class MainFrame extends JFrame {
             }
         }
         if (itemName.isBlank()) {
-            log.warn("Recipe " + sourceId + " hasn't lang resource (block. or item." + itemId.replace(":", ".").replace("/", ".") + "), it will lost name display in tooltip.");
+            log.warn(MessageUtil.getMessage("log.func.i18n.item.id.not.found", sourceId, itemIdWithoutNamespace));
         }
         return itemName;
     }
@@ -857,7 +878,8 @@ public class MainFrame extends JFrame {
      * @return 显示名称
      */
     private static String getLocaleText(String localeId) {
-        Map<String, List<ResourceLocation>> langResources = ResourceManager.getResources((namespace, resource) -> resource instanceof Lang rlang && localeId.equals(rlang.getFullKey()));
+        Map<String, List<ResourceLocation>> langResources =
+                ResourceManager.getResources((namespace, resource) -> resource instanceof Lang rlang && localeId.equals(rlang.getFullKey()));
         String localeText = "";
         if (!langResources.isEmpty()) {
             for (List<ResourceLocation> ll : langResources.values()) {
@@ -869,7 +891,7 @@ public class MainFrame extends JFrame {
             }
         }
         if (localeText.isBlank()) {
-            log.warn(localeId + " hasn't lang resource, it will lost display in tooltip.");
+            log.warn(MessageUtil.getMessage("log.func.i18n.locale.id.not.found", localeId));
         }
         return localeText;
     }
@@ -913,9 +935,10 @@ public class MainFrame extends JFrame {
      * 获取拷贝的TFC铁砧UI资源
      */
     public static BufferedImage getTfcAnvilAsset() {
-        List<ResourceLocation> anvilRs = ResourceManager.getResources("tfc", r -> r instanceof Texture rr && "gui".equals(rr.getTextureType()) && "anvil".equals(r.getPath()));
+        List<ResourceLocation> anvilRs = ResourceManager.getResources("tfc", r ->
+                r instanceof Texture rr && "gui".equals(rr.getTextureType()) && "anvil".equals(r.getPath()));
         if (anvilRs.isEmpty()) {
-            log.error("Not load tfc:anvil texture resource!");
+            log.error(MessageUtil.getMessage("log.load.no.tfc.anvil.texture"));
             return null;
         }
         BufferedImage _asset = ((Texture) anvilRs.get(0)).getImg();
@@ -975,7 +998,9 @@ public class MainFrame extends JFrame {
         return resource -> {
             if (!(resource instanceof RecipeAnvil recipe)) return false;
             if (source == this.buttonScroll) {
-                String firstInput = this.buttonMainMaterial.getNowChooseRecipes().isEmpty() ? null : getItemIdFromTagId(this.buttonMainMaterial.getNowChooseRecipes().get(0).getInput(), this.buttonMainMaterial.getNowChooseRecipes().get(0).toResourceLocationStr());
+                String firstInput = this.buttonMainMaterial.getNowChooseRecipes().isEmpty() ? null :
+                        getItemIdFromTagId(this.buttonMainMaterial.getNowChooseRecipes().get(0).getInput(),
+                                this.buttonMainMaterial.getNowChooseRecipes().get(0).toResourceLocationStr());
                 String secondInput = null;
                 if (firstInput == null && secondInput == null)
                     return true;
@@ -987,7 +1012,8 @@ public class MainFrame extends JFrame {
                     return false;
                 return true;
             } else if (source == this.buttonMainMaterial) {
-                String output = this.buttonScroll.getNowChooseRecipes().isEmpty() ? null : this.buttonScroll.getNowChooseRecipes().get(0).getResult().gotItemId();
+                String output = this.buttonScroll.getNowChooseRecipes().isEmpty() ? null :
+                        this.buttonScroll.getNowChooseRecipes().get(0).getResult().gotItemId();
                 String secondInput = null;
                 if (output == null && secondInput == null)
                     return true;
@@ -1013,10 +1039,10 @@ public class MainFrame extends JFrame {
      * @param ruleName 规则名称
      * @return 显示文本
      */
-    private List<TooltipColorUtil.TooltipColor> getRuleTooltip(String ruleName) {
+    private static List<TooltipColorUtil.TooltipColor> getRuleTooltip(String ruleName) {
         String[] s = ruleName.split("_");
         if (s.length < 2) {
-            log.warn("Wrong rule string: " + ruleName + ", must be [step]_[order].");
+            log.warn(MessageUtil.getMessage("log.func.rule.wrong.string.format", ruleName));
         }
         TooltipColorUtil.Builder builder = TooltipColorUtil.builder();
         switch (s[0]) {
@@ -1048,7 +1074,7 @@ public class MainFrame extends JFrame {
                 builder.withText(getLocaleText("tfc.enum.forgestep.shrink"), Color.WHITE);
             }
             default -> {
-                log.warn("Wrong rule step: " + s[0]);
+                log.warn(MessageUtil.getMessage("log.func.rule.wrong.step", s[0]));
             }
         }
         String order = ruleName.substring(ruleName.indexOf("_") + 1);
@@ -1069,7 +1095,7 @@ public class MainFrame extends JFrame {
                 builder.withText(" " + getLocaleText("tfc.enum.order.third_last"), Color.WHITE);
             }
             default -> {
-                log.warn("Wrong rule order: " + order);
+                log.warn(MessageUtil.getMessage("log.func.rule.wrong.order", order));
             }
         }
         return builder.build();
@@ -1081,10 +1107,10 @@ public class MainFrame extends JFrame {
      * @param ruleName 规则名称
      * @return 规则图案
      */
-    private BufferedImage getRuleIcon(String ruleName) {
+    private static BufferedImage getRuleIcon(String ruleName) {
         String[] s = ruleName.split("_");
         if (s.length < 2) {
-            log.warn("Wrong rule string: " + ruleName + ", must be [step]_[order].");
+            log.warn(MessageUtil.getMessage("log.func.rule.wrong.string.format", ruleName));
         }
         BufferedImage asset = getTfcAnvilAsset();
         if (asset == null) {
@@ -1114,7 +1140,7 @@ public class MainFrame extends JFrame {
                         ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameThirdFromLastWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameThirdFromLastHeight());
             }
             default -> {
-                log.warn("Wrong rule order: " + order);
+                log.warn(MessageUtil.getMessage("log.func.rule.wrong.order", order));
             }
         }
         if (frame != null) {
@@ -1202,7 +1228,7 @@ public class MainFrame extends JFrame {
                             ConfigUtil.INSTANCE.getAnvilAssetUIShrinkWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIShrinkHeight());
                 }
                 default -> {
-                    log.warn("Wrong rule step: " + s[0]);
+                    log.warn(MessageUtil.getMessage("log.func.rule.wrong.step", s[0]));
                 }
             }
             if (icon != null) {

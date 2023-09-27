@@ -18,7 +18,7 @@ public class ConfigUtil {
         try {
             INSTANCE = load();
         } catch (IOException e) {
-            throw new IllegalArgumentException("Parse config file is error, maybe it corrupted?", e);
+            throw new IllegalArgumentException(MessageUtil.getMessage("log.load.config.error"), e);
         }
     }
 
@@ -27,7 +27,8 @@ public class ConfigUtil {
         File runLocation = new File(System.getProperty("user.dir")).getAbsoluteFile();
         File confFolder = new File(runLocation, "conf");
         if (!confFolder.exists()) {
-            confFolder.mkdir();
+            //noinspection unused
+            boolean mkdir = confFolder.mkdir();
         }
         if (confFolder.exists() && confFolder.isDirectory() && confFolder.canRead()) {
             File configFile = new File(confFolder, "config.conf");
@@ -35,7 +36,8 @@ public class ConfigUtil {
                 return JsonUtil.INSTANCE.readValue(configFile, Config.class);
             } else {
                 if (configFile.exists()) {
-                    configFile.renameTo(new File(confFolder, "config.conf.bak"));
+                    //noinspection unused
+                    boolean b = configFile.renameTo(new File(confFolder, "config.conf.bak"));
                 }
                 configFile = new File(confFolder, "config.conf");
                 Config defaultConfig = new Config();
@@ -43,7 +45,7 @@ public class ConfigUtil {
                 return defaultConfig;
             }
         }
-        throw new FileNotFoundException("Config directory can't be created.");
+        throw new FileNotFoundException(MessageUtil.getMessage("log.load.config.create.failed"));
     }
 
 }
