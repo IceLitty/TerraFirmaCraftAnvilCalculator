@@ -30,11 +30,11 @@ public class MainFrame extends JFrame {
     private ImageJButton buttonScroll;
     private ImageJButton buttonMainMaterial;
     private ImageJButton buttonOffMaterial;
-    private JFormattedTextField targetInput;
+    private TooltipJFormattedTextField targetInput;
     private JLabel targetInputLabel;
-    private JFormattedTextField targetNowInput;
+    private TooltipJFormattedTextField targetNowInput;
     private JLabel targetNowInputLabel;
-    private JFormattedTextField seedInput;
+    private TooltipJFormattedTextField seedInput;
     private JLabel seedInputLabel;
     private JTextPane outputArea;
     private JScrollPane outputScrollPane;
@@ -43,6 +43,7 @@ public class MainFrame extends JFrame {
     private ImageJButton ruleRight;
 
     public MainFrame() throws HeadlessException {
+        // TODO 改为先显示空面板，标题显示加载资源进度条
         this.mainFrame = this;
         // 加载配置文件
         log.debug(MessageUtil.getMessage("log.config.loaded", ConfigUtil.INSTANCE));
@@ -184,7 +185,7 @@ public class MainFrame extends JFrame {
         buttonOffMaterial.addMouseListener(new RecipeJButtonMouseAdapter());
         this.add(buttonOffMaterial);
         // 合成配方目标值输入框
-        this.targetInput = new JFormattedTextField(RangeIntegerFormat.getInstance(0, 145, 0));
+        this.targetInput = new TooltipJFormattedTextField(RangeIntegerFormat.getInstance(0, 145, 0));
         targetInput.setOpaque(false);
         targetInput.setBorder(BorderFactory.createEmptyBorder());
         targetInput.setText("0");
@@ -193,6 +194,9 @@ public class MainFrame extends JFrame {
         targetInput.setLocation(ConfigUtil.INSTANCE.getScaleUI(), ConfigUtil.INSTANCE.getScaleUI());
         targetInput.setSize(new Dimension((ConfigUtil.INSTANCE.getAnvilAssetUIInputTargetWidth() - 2) * ConfigUtil.INSTANCE.getScaleUI(),
                 (ConfigUtil.INSTANCE.getAnvilAssetUIInputTargetHeight() - 2) * ConfigUtil.INSTANCE.getScaleUI()));
+        targetInput.setColorTooltips(TooltipColorUtil.builder()
+                .withText(MessageUtil.getMessage("ui.tooltip.target"), Color.WHITE)
+                .build());
         targetInput.addFocusListener(new FocusListener() {
             private String textGet = null;
             @Override
@@ -204,7 +208,7 @@ public class MainFrame extends JFrame {
                 String target = targetInput.getText();
                 if (target != null && !target.isBlank() && !target.equals(textGet)) {
                     log.debug("changed! " + target);
-                    // TODO 自动执行计算
+                    // TODO 调整红色箭头 自动执行计算
                 }
             }
         });
@@ -220,7 +224,7 @@ public class MainFrame extends JFrame {
                 ConfigUtil.INSTANCE.getAnvilAssetUIInputTargetHeight() * ConfigUtil.INSTANCE.getScaleUI()));
         this.add(targetInputLabel);
         // 合成配方当前值输入框
-        this.targetNowInput = new JFormattedTextField(RangeIntegerFormat.getInstance(0, 145, 0));
+        this.targetNowInput = new TooltipJFormattedTextField(RangeIntegerFormat.getInstance(0, 145, 0));
         targetNowInput.setOpaque(false);
         targetNowInput.setBorder(BorderFactory.createEmptyBorder());
         targetNowInput.setText("0");
@@ -229,6 +233,9 @@ public class MainFrame extends JFrame {
         targetNowInput.setLocation(ConfigUtil.INSTANCE.getScaleUI(), ConfigUtil.INSTANCE.getScaleUI());
         targetNowInput.setSize(new Dimension((ConfigUtil.INSTANCE.getAnvilAssetUIInputTargetNowWidth() - 2) * ConfigUtil.INSTANCE.getScaleUI(),
                 (ConfigUtil.INSTANCE.getAnvilAssetUIInputTargetNowHeight() - 2) * ConfigUtil.INSTANCE.getScaleUI()));
+        targetNowInput.setColorTooltips(TooltipColorUtil.builder()
+                .withText(MessageUtil.getMessage("ui.tooltip.target.now"), Color.WHITE)
+                .build());
         targetNowInput.addFocusListener(new FocusListener() {
             private String textGet = null;
             @Override
@@ -240,7 +247,7 @@ public class MainFrame extends JFrame {
                 String targetNow = targetNowInput.getText();
                 if (targetNow != null && !targetNow.isBlank() && !targetNow.equals(textGet)) {
                     log.debug("changed! " + targetNow);
-                    // TODO 自动执行计算
+                    // TODO 调整绿色箭头 自动执行计算
                 }
             }
         });
@@ -256,7 +263,7 @@ public class MainFrame extends JFrame {
                 ConfigUtil.INSTANCE.getAnvilAssetUIInputTargetNowHeight() * ConfigUtil.INSTANCE.getScaleUI()));
         this.add(targetNowInputLabel);
         // 地图种子输入框
-        this.seedInput = new JFormattedTextField();
+        this.seedInput = new TooltipJFormattedTextField();
         seedInput.setOpaque(false);
         seedInput.setBorder(BorderFactory.createEmptyBorder());
         seedInput.setText(ConfigUtil.INSTANCE.getMapSeed());
@@ -265,6 +272,9 @@ public class MainFrame extends JFrame {
         seedInput.setLocation(ConfigUtil.INSTANCE.getScaleUI(), ConfigUtil.INSTANCE.getScaleUI());
         seedInput.setSize(new Dimension((ConfigUtil.INSTANCE.getAnvilAssetUIInputSeedWidth() - 2) * ConfigUtil.INSTANCE.getScaleUI(),
                 (ConfigUtil.INSTANCE.getAnvilAssetUIInputSeedHeight() - 2) * ConfigUtil.INSTANCE.getScaleUI()));
+        seedInput.setColorTooltips(TooltipColorUtil.builder()
+                .withText(MessageUtil.getMessage("ui.tooltip.map.seed"), Color.WHITE)
+                .build());
         seedInput.addFocusListener(new FocusListener() {
             private String textGet = null;
             @Override
@@ -277,9 +287,15 @@ public class MainFrame extends JFrame {
                 if (seed != null && !seed.isBlank() && !seed.equals(textGet)) {
                     List<RecipeAnvil> savedRecipe = buttonScroll.getNowChooseRecipes();
                     if (!savedRecipe.isEmpty()) {
-                        int target = calcTargetFromSeed(savedRecipe.get(0), seed);
-                        targetInput.setText(String.valueOf(target));
-                        // TODO 自动执行计算
+                        try {
+                            long _seed = Long.parseLong(seed);
+                            int target = new XoroshiroRandomUtil().calcTarget(_seed, savedRecipe.get(0).toResourceLocationStr());
+                            targetInput.setText(String.valueOf(target));
+                            // TODO 自动执行计算
+                        } catch (NumberFormatException ignored) {
+                            targetInput.setText("0");
+                            log.error(MessageUtil.getMessage("log.func.calc.wrong.seed"));
+                        }
                     }
                 }
             }
@@ -338,6 +354,7 @@ public class MainFrame extends JFrame {
         ruleRight.setSize(new Dimension(ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNotLastWidth() * ConfigUtil.INSTANCE.getScaleUI(),
                 ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNotLastHeight() * ConfigUtil.INSTANCE.getScaleUI()));
         this.add(ruleRight);
+        // TODO 红绿色箭头指示器
     }
 
     /**
@@ -387,7 +404,27 @@ public class MainFrame extends JFrame {
         List<ResourceLocation> recipes = new ArrayList<>();
         ResourceManager.getResources((namespace, resource) -> resource instanceof RecipeAnvil recipeR && "tfc:anvil".equals(recipeR.getType()))
                 .values().forEach(recipes::addAll);
-        recipes = recipes.stream().filter(recipeFilterPredicate(sourceButton)).collect(Collectors.toList());
+        recipes = recipes.stream().filter(recipeFilterPredicate(sourceButton)).sorted((o1, o2) -> {
+            // 按显示文本排序
+            RecipeAnvil o11 = (RecipeAnvil) o1;
+            RecipeAnvil o22 = (RecipeAnvil) o2;
+            String o1ItemId;
+            String o2ItemId;
+            if (sourceButton == buttonScroll) {
+                o1ItemId = o11.getResult().gotItemId();
+                o2ItemId = o22.getResult().gotItemId();
+            } else {
+                o1ItemId = getItemIdFromTagId(o11.getInput(), o1.toResourceLocationStr());
+                o2ItemId = getItemIdFromTagId(o22.getInput(), o2.toResourceLocationStr());
+            }
+            String o1ItemName = getItemDisplayName(o1ItemId, null, o1.toResourceLocationStr());
+            String o2ItemName = getItemDisplayName(o2ItemId, null, o2.toResourceLocationStr());
+            if (o1ItemName.trim().isEmpty() || o2ItemName.trim().isEmpty()) {
+                o1ItemName = o1ItemId;
+                o2ItemName = o2ItemId;
+            }
+            return o1ItemName.compareTo(o2ItemName);
+        }).collect(Collectors.toList());
         // 加载背景图
         BufferedImage asset = getTfcAnvilAsset();
         if (asset == null)
@@ -485,10 +522,10 @@ public class MainFrame extends JFrame {
                 fullRecipeDesc += inputMainItemName;
             }
             if (!inputOffItemName.isBlank()) {
-                fullRecipeDesc += "+" + inputOffItemName;
+                fullRecipeDesc += " + " + inputOffItemName;
             }
             if (!resultItemName.isBlank()) {
-                fullRecipeDesc += "->" + resultItemName;
+                fullRecipeDesc += " -> " + resultItemName;
             }
             final String finalFullRecipeDesc = fullRecipeDesc;
             // 获取材质写入缓存
@@ -530,7 +567,7 @@ public class MainFrame extends JFrame {
                     .withText(itemName, ColorPresent.getTooltipItemName())
                     .withNewLine().withText(itemId, ColorPresent.getTooltipItemDesc())
                     .withNewLine().withText(MessageUtil.getMessage("ui.tooltip.mod.is"), ColorPresent.getTooltipItemDesc()).withText(ResourceManager.getModDisplayNameByModId(itemNamespace), ColorPresent.getTooltipModId(), false, true)
-                    .withText(!fullRecipeDesc.isBlank() ? null : "\n" + fullRecipeDesc, ColorPresent.getTooltipItemDesc())
+                    .withText(fullRecipeDesc.isBlank() ? null : "\n" + fullRecipeDesc, ColorPresent.getTooltipItemDesc())
                     .withNewLine().withText(MessageUtil.getMessage("ui.tooltip.recipe.from") + recipe.toResourceLocationStr(), ColorPresent.getTooltipItemDesc())
                     .withText(textureCantFindReason == null ? null : "\n" + textureCantFindReason, Color.RED)
                     .build());
@@ -561,7 +598,7 @@ public class MainFrame extends JFrame {
                         .withText(resultItemName, ColorPresent.getTooltipItemName())
                         .withNewLine().withText(resultItemId, ColorPresent.getTooltipItemDesc())
                         .withNewLine().withText(MessageUtil.getMessage("ui.tooltip.mod.is"), ColorPresent.getTooltipItemDesc()).withText(ResourceManager.getModDisplayNameByModId(resultItemId.split(":")[0]), ColorPresent.getTooltipModId(), false, true)
-                        .withText(!finalFullRecipeDesc.isBlank() ? null : "\n" + finalFullRecipeDesc, ColorPresent.getTooltipItemDesc())
+                        .withText(finalFullRecipeDesc.isBlank() ? null : "\n" + finalFullRecipeDesc, ColorPresent.getTooltipItemDesc())
                         .withNewLine().withText(MessageUtil.getMessage("ui.tooltip.recipe.from") + recipe.toResourceLocationStr(), ColorPresent.getTooltipItemDesc())
                         .build());
                 // 设置主素材按钮
@@ -627,8 +664,14 @@ public class MainFrame extends JFrame {
                 // TODO 根据配方的tier显示不同等级的锤子
                 String seed = this.seedInput.getText();
                 if (seed != null && !seed.isBlank()) {
-                    int target = calcTargetFromSeed(nowChooseRecipe, seed);
-                    this.targetInput.setText(String.valueOf(target));
+                    try {
+                        long _seed = Long.parseLong(seed);
+                        int target = new XoroshiroRandomUtil().calcTarget(_seed, savedRecipe.get(0).toResourceLocationStr());
+                        this.targetInput.setText(String.valueOf(target));
+                    } catch (NumberFormatException ignored) {
+                        this.targetInput.setText("0");
+                        log.error(MessageUtil.getMessage("log.func.calc.wrong.seed"));
+                    }
                 }
                 this.targetNowInput.setText("0");
                 String target = this.targetInput.getText();
@@ -670,17 +713,6 @@ public class MainFrame extends JFrame {
     }
 
     /**
-     * TODO 通过配方和地图种子获取配方种子，通过配方种子计算配方目标值
-     *
-     * @param recipe 配方
-     * @param seed   地图种子
-     * @return 配方目标
-     */
-    private static int calcTargetFromSeed(ResourceLocation recipe, String seed) {
-        return 0;
-    }
-
-    /**
      * TODO 读取UI中的target和rule，调用计算方法完成配方操作计算
      */
     private void calcResults() {
@@ -709,10 +741,29 @@ public class MainFrame extends JFrame {
                     log.warn(MessageUtil.getMessage("log.func.tag.id.found.more.than.one", tagId, sourceId, join));
                 } else {
                     List<String> tagVals = ((Tag) rl.get(0)).getValues();
-                    if (tagVals == null || tagVals.size() != 1) {
+                    if (tagVals == null) {
                         log.warn(MessageUtil.getMessage("log.func.tag.id.content.has.empty.or.more.than.one", tagId, sourceId));
                     } else {
-                        itemId = tagVals.get(0);
+                        if (tagVals.size() != 1) {
+                            String findTfcItem = null;
+                            String findMinecraftItem = null;
+                            for (String t : tagVals) {
+                                if (t.startsWith("tfc:")) {
+                                    findTfcItem = t;
+                                } else if (t.startsWith("minecraft:")) {
+                                    findMinecraftItem = t;
+                                }
+                            }
+                            if (findTfcItem == null && findMinecraftItem == null) {
+                                log.warn(MessageUtil.getMessage("log.func.tag.id.content.has.empty.or.more.than.one", tagId, sourceId));
+                            } else if (findTfcItem != null) {
+                                itemId = findTfcItem;
+                            } else {
+                                itemId = findMinecraftItem;
+                            }
+                        } else {
+                            itemId = tagVals.get(0);
+                        }
                     }
                 }
             }
@@ -743,7 +794,7 @@ public class MainFrame extends JFrame {
      * @return 物品ID
      */
     private static String getItemIdFromTagId(RecipeAnvil.Ingredients ingredients, String sourceId) {
-        String itemId = null;
+        String itemId = ingredients.getItem();
         if ((ingredients.getItem() == null || ingredients.getItem().isBlank()) && ingredients.getTag() != null) {
             itemId = getItemIdFromTagId(ingredients.getTag(), sourceId);
         }
