@@ -810,16 +810,6 @@ public class MainFrame extends JFrame {
             this.outputArea.removeAll();
             RecipeAnvil recipe = nowChooseRecipes.get(0);
             List<String> rules = recipe.getRules();
-            boolean containsHit = false;
-            for (String r : rules) {
-                if (r != null && r.startsWith(AnvilFuncStep.HIT.getId()) &&
-                        !r.startsWith(AnvilFuncStep.HIT_HARD.getId()) &&
-                        !r.startsWith(AnvilFuncStep.HIT_MEDIUM.getId()) &&
-                        !r.startsWith(AnvilFuncStep.HIT_LIGHT.getId())) {
-                    containsHit = true;
-                    break;
-                }
-            }
             // 根据order排序
             rules.sort((r1, r2) -> {
                 String order1 = AnvilFuncStep.takeOrderFromKey(r1);
@@ -841,18 +831,9 @@ public class MainFrame extends JFrame {
                 return order2n - order1n;
             });
             List<List<Integer>> resultL = new ArrayList<>();
-            for (int rIndex = 0; rIndex < (containsHit ? 3 : 1); rIndex++) {
-                int[] rule = new int[rules.size()];
-                for (int i = 0; i < rules.size(); i++) { // TODO 以及此处的逻辑也有问题：比如配方都是HIT时，加入rule的都是同一个元素如轻击，并不能将全部可能性带出
-                    AnvilFuncStep anvilFuncStep = AnvilFuncStep.findByKey(rules.get(i));
-                    if (anvilFuncStep == null) {
-                        log.error(MessageUtil.getMessage("log.func.rule.wrong.step", rules.get(i)));
-                    } else if (anvilFuncStep == AnvilFuncStep.HIT) {
-                        rule[i] = (rIndex == 0 ? AnvilFuncStep.HIT_LIGHT : (rIndex == 1 ? AnvilFuncStep.HIT_MEDIUM : AnvilFuncStep.HIT_HARD)).getVal();
-                    } else {
-                        rule[i] = anvilFuncStep.getVal();
-                    }
-                }
+            List<int[]> _rules = new ArrayList<>();
+            CalculatorUtil.convert(rules, new int[rules.size()], _rules, 0);
+            for (int[] rule : _rules) {
                 int _target = Integer.parseInt(target);
                 int _targetNow = 0;
                 if (targetNow != null && !targetNow.isEmpty()) {

@@ -1,6 +1,7 @@
 package moe.icyr.tfc.anvil.calc.util;
 
 import lombok.extern.slf4j.Slf4j;
+import moe.icyr.tfc.anvil.calc.entity.AnvilFuncStep;
 import moe.icyr.tfc.anvil.calc.entity.Tree;
 
 import java.util.ArrayList;
@@ -73,6 +74,41 @@ public class CalculatorUtil {
             // 寻找包围目标值的操作数
             funcIndex--;
             calcInternal(targetNow, target, treeNode, funcIndex);
+        }
+    }
+
+    /**
+     * 将rule、初始化当前数组、初始化结果数组、初始化下标传入后进行转换
+     *
+     * @param init   rule
+     * @param now    固定new[init.size()]
+     * @param result 固定new
+     * @param index  固定0
+     */
+    public static void convert(List<String> init, int[] now, List<int[]> result, int index) {
+        if (index >= init.size()) {
+            result.add(now);
+        } else {
+            AnvilFuncStep anvilFuncStep = AnvilFuncStep.findByKey(init.get(index));
+            if (anvilFuncStep == null) {
+                log.error(MessageUtil.getMessage("log.func.rule.wrong.step", init.get(index)));
+            } else if (anvilFuncStep == AnvilFuncStep.HIT) {
+                int[] now1 = new int[now.length];
+                int[] now2 = new int[now.length];
+                int[] now3 = new int[now.length];
+                System.arraycopy(now, 0, now1, 0, now.length);
+                System.arraycopy(now, 0, now2, 0, now.length);
+                System.arraycopy(now, 0, now3, 0, now.length);
+                now1[index] = AnvilFuncStep.HIT_LIGHT.getVal();
+                now2[index] = AnvilFuncStep.HIT_MEDIUM.getVal();
+                now3[index] = AnvilFuncStep.HIT_HARD.getVal();
+                convert(init, now1, result, index + 1);
+                convert(init, now2, result, index + 1);
+                convert(init, now3, result, index + 1);
+            } else {
+                now[index] = anvilFuncStep.getVal();
+                convert(init, now, result, index + 1);
+            }
         }
     }
 
