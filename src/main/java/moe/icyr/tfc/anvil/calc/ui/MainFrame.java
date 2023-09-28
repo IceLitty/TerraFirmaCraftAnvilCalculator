@@ -45,9 +45,6 @@ public class MainFrame extends JFrame {
     public MainFrame() throws HeadlessException {
         // TODO 改为先显示空面板，标题显示加载资源进度条
         this.mainFrame = this;
-//        CalculatorUtil.calc(); // TODO debug
-//        if (true)
-//            return;
         // 加载配置文件
         log.debug(MessageUtil.getMessage("log.config.loaded", ConfigUtil.INSTANCE));
         AssetsLoader assetsLoader = new AssetsLoader();
