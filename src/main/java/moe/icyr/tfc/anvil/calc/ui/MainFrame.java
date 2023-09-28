@@ -8,6 +8,8 @@ import moe.icyr.tfc.anvil.calc.resource.*;
 import moe.icyr.tfc.anvil.calc.util.*;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.AffineTransform;
@@ -17,6 +19,7 @@ import java.awt.image.BufferedImageOp;
 import java.awt.image.LookupOp;
 import java.util.*;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -50,12 +53,19 @@ public class MainFrame extends JFrame {
         this.mainFrame = this;
         // 加载配置文件
         log.debug(MessageUtil.getMessage("log.config.loaded", ConfigUtil.INSTANCE));
+        // 初始化UI
+        this.setSize(ConfigUtil.INSTANCE.getAnvilAssetUIWidth() * ConfigUtil.INSTANCE.getScaleUI() + ConfigUtil.INSTANCE.getMainFrameWidthOffset(),
+                ConfigUtil.INSTANCE.getAnvilAssetUIHeight() * ConfigUtil.INSTANCE.getScaleUI() + ConfigUtil.INSTANCE.getMainFrameHeightOffset());
+//        this.setResizable(false); // TODO debug
+        this.setLocationRelativeTo(null); // 屏幕居中
+        this.setVisible(true);
+        this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         AssetsLoader assetsLoader = new AssetsLoader();
         // 加载MOD资源包材质包
-        assetsLoader.loadMods();
-        // [x]还是加载合成配方UI时一并加载进按钮对象中 _TODO 还是得先加载铁砧配方再初始化UI
+        assetsLoader.loadMods(this::setTitle);
         // 动态处理素材-加载窗体UI
-        this.loadAnvilUI();
+        this.setTitle(MessageUtil.getMessage("ui.title.loading.ui", 2, 2));
+        this.loadAnvilUI(this::setTitle);
         // TODO 根据TFC铁砧UI加载工具UI界面，或者修改UI图改为内置
         // TODO 加载type=tfc:anvil的recipe到铁砧配方对象（方便UI调用及后续按钮交互）
         //  加载全部的input配方到UI的输入格点开的面板中，实现一个输入的配方及一个输入后筛选第二输入的物品列表
@@ -69,20 +79,13 @@ public class MainFrame extends JFrame {
         // 设置tooltip时间
         ToolTipManager.sharedInstance().setInitialDelay(0);
         ToolTipManager.sharedInstance().setDismissDelay(10000);
-        // 初始化UI
         this.setTitle(MessageUtil.getMessage("ui.title"));
-        this.setSize(ConfigUtil.INSTANCE.getAnvilAssetUIWidth() * ConfigUtil.INSTANCE.getScaleUI() + ConfigUtil.INSTANCE.getMainFrameWidthOffset(),
-                ConfigUtil.INSTANCE.getAnvilAssetUIHeight() * ConfigUtil.INSTANCE.getScaleUI() + ConfigUtil.INSTANCE.getMainFrameHeightOffset());
-//        this.setResizable(false); // TODO debug
-        this.setLocationRelativeTo(null); // 屏幕居中
-        this.setVisible(true);
-        this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
     }
 
     /**
      * 加载TFC铁砧UI
      */
-    public void loadAnvilUI() {
+    public void loadAnvilUI(Consumer<String> progressFeedback) {
         BufferedImage asset = getTfcAnvilAsset();
         if (asset == null) {
             JTextArea jTextArea = new JTextArea();
@@ -170,7 +173,8 @@ public class MainFrame extends JFrame {
         buttonScroll.setLocation(ConfigUtil.INSTANCE.getAnvilAssetUIOpenRecipeButtonX() * ConfigUtil.INSTANCE.getScaleUI(),
                 ConfigUtil.INSTANCE.getAnvilAssetUIOpenRecipeButtonY() * ConfigUtil.INSTANCE.getScaleUI());
         buttonScroll.setSize(new Dimension(_buttonScroll.getWidth(), _buttonScroll.getHeight()));
-        buttonScroll.addMouseListener(new RecipeJButtonMouseAdapter());
+        buttonScroll.setColorTooltips(getButtonScrollEmptyTooltip(buttonScroll));
+        buttonScroll.addMouseListener(new RecipeJButtonMouseAdapter(progressFeedback));
         this.add(buttonScroll);
         // 主合成物按钮
         buttonMainMaterial.setIcon(null);
@@ -178,7 +182,8 @@ public class MainFrame extends JFrame {
                 ConfigUtil.INSTANCE.getAnvilAssetUIOpenMaterial1ButtonY() * ConfigUtil.INSTANCE.getScaleUI());
         buttonMainMaterial.setSize(new Dimension(ConfigUtil.INSTANCE.getAnvilAssetUIOpenMaterial1ButtonWidth() * ConfigUtil.INSTANCE.getScaleUI(),
                 ConfigUtil.INSTANCE.getAnvilAssetUIOpenMaterial1ButtonHeight() * ConfigUtil.INSTANCE.getScaleUI()));
-        buttonMainMaterial.addMouseListener(new RecipeJButtonMouseAdapter());
+        buttonMainMaterial.setColorTooltips(getButtonScrollEmptyTooltip(buttonMainMaterial));
+        buttonMainMaterial.addMouseListener(new RecipeJButtonMouseAdapter(progressFeedback));
         this.add(buttonMainMaterial);
         // 副合成物按钮
         buttonOffMaterial.setIcon(null);
@@ -186,7 +191,8 @@ public class MainFrame extends JFrame {
                 ConfigUtil.INSTANCE.getAnvilAssetUIOpenMaterial2ButtonY() * ConfigUtil.INSTANCE.getScaleUI());
         buttonOffMaterial.setSize(new Dimension(ConfigUtil.INSTANCE.getAnvilAssetUIOpenMaterial2ButtonWidth() * ConfigUtil.INSTANCE.getScaleUI(),
                 ConfigUtil.INSTANCE.getAnvilAssetUIOpenMaterial2ButtonHeight() * ConfigUtil.INSTANCE.getScaleUI()));
-        buttonOffMaterial.addMouseListener(new RecipeJButtonMouseAdapter());
+        buttonOffMaterial.setColorTooltips(getButtonScrollEmptyTooltip(buttonOffMaterial));
+        buttonOffMaterial.addMouseListener(new RecipeJButtonMouseAdapter(progressFeedback));
         this.add(buttonOffMaterial);
         // 合成配方目标值输入框
         this.targetInput = new TooltipJFormattedTextField(RangeIntegerFormat.getInstance(0, 145, 0));
@@ -199,8 +205,26 @@ public class MainFrame extends JFrame {
         targetInput.setSize(new Dimension((ConfigUtil.INSTANCE.getAnvilAssetUIInputTargetWidth() - 2) * ConfigUtil.INSTANCE.getScaleUI(),
                 (ConfigUtil.INSTANCE.getAnvilAssetUIInputTargetHeight() - 2) * ConfigUtil.INSTANCE.getScaleUI()));
         targetInput.setColorTooltips(TooltipColorUtil.builder()
-                .withText(MessageUtil.getMessage("ui.tooltip.target"), Color.WHITE)
+                .withText(MessageUtil.getMessage("ui.tooltip.target"), ColorPresent.getTooltipItemName())
                 .build());
+        targetInput.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                // 调整红色箭头
+                String target = targetInput.getText();
+                if (target != null && !target.isEmpty() && target.replaceAll("\\D", "").length() == target.length()) {
+                    int t = Math.max(Math.min(145, Integer.parseInt(target)), 0);
+                    targetIcon.setLocation((ConfigUtil.INSTANCE.getAnvilAssetUITargetStartX() + t) * ConfigUtil.INSTANCE.getScaleUI(),
+                            ConfigUtil.INSTANCE.getAnvilAssetUITargetStartY() * ConfigUtil.INSTANCE.getScaleUI());
+                }
+            }
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+            }
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+            }
+        });
         targetInput.addFocusListener(new FocusListener() {
             private String textGet = null;
             @Override
@@ -214,11 +238,7 @@ public class MainFrame extends JFrame {
                     if (seedInput.getText() != null && !seedInput.getText().isBlank() && !buttonScroll.getNowChooseRecipes().isEmpty()) {
                         // TODO 提前统计全部配方的MD5，然后根据固定逆向顺序将target还原成map seed
                     }
-                    // 调整红色箭头
-                    int t = Math.max(Math.min(145, Integer.parseInt(target)), 0);
-                    targetIcon.setLocation((ConfigUtil.INSTANCE.getAnvilAssetUITargetStartX() + t) * ConfigUtil.INSTANCE.getScaleUI(),
-                            (ConfigUtil.INSTANCE.getAnvilAssetUITargetStartY() + t) * ConfigUtil.INSTANCE.getScaleUI());
-                    calcResults();
+                    calcResults(progressFeedback);
                 }
             }
         });
@@ -244,8 +264,26 @@ public class MainFrame extends JFrame {
         targetNowInput.setSize(new Dimension((ConfigUtil.INSTANCE.getAnvilAssetUIInputTargetNowWidth() - 2) * ConfigUtil.INSTANCE.getScaleUI(),
                 (ConfigUtil.INSTANCE.getAnvilAssetUIInputTargetNowHeight() - 2) * ConfigUtil.INSTANCE.getScaleUI()));
         targetNowInput.setColorTooltips(TooltipColorUtil.builder()
-                .withText(MessageUtil.getMessage("ui.tooltip.target.now"), Color.WHITE)
+                .withText(MessageUtil.getMessage("ui.tooltip.target.now"), ColorPresent.getTooltipItemName())
                 .build());
+        targetNowInput.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                // 调整绿色箭头
+                String targetNow = targetNowInput.getText();
+                if (targetNow != null && !targetNow.isEmpty() && targetNow.replaceAll("\\D", "").length() == targetNow.length()) {
+                    int t = Math.max(Math.min(145, Integer.parseInt(targetNow)), 0);
+                    targetNowIcon.setLocation((ConfigUtil.INSTANCE.getAnvilAssetUITargetNowStartX() + t) * ConfigUtil.INSTANCE.getScaleUI(),
+                            ConfigUtil.INSTANCE.getAnvilAssetUITargetNowStartY() * ConfigUtil.INSTANCE.getScaleUI());
+                }
+            }
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+            }
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+            }
+        });
         targetNowInput.addFocusListener(new FocusListener() {
             private String textGet = null;
             @Override
@@ -256,11 +294,7 @@ public class MainFrame extends JFrame {
             public void focusLost(FocusEvent e) {
                 String targetNow = targetNowInput.getText();
                 if (targetNow != null && !targetNow.isBlank() && !targetNow.equals(textGet)) {
-                    // 调整绿色箭头
-                    int t = Math.max(Math.min(145, Integer.parseInt(targetNow)), 0);
-                    targetNowIcon.setLocation((ConfigUtil.INSTANCE.getAnvilAssetUITargetNowStartX() + t) * ConfigUtil.INSTANCE.getScaleUI(),
-                            (ConfigUtil.INSTANCE.getAnvilAssetUITargetNowStartY() + t) * ConfigUtil.INSTANCE.getScaleUI());
-                    calcResults();
+                    calcResults(progressFeedback);
                 }
             }
         });
@@ -286,7 +320,7 @@ public class MainFrame extends JFrame {
         seedInput.setSize(new Dimension((ConfigUtil.INSTANCE.getAnvilAssetUIInputSeedWidth() - 2) * ConfigUtil.INSTANCE.getScaleUI(),
                 (ConfigUtil.INSTANCE.getAnvilAssetUIInputSeedHeight() - 2) * ConfigUtil.INSTANCE.getScaleUI()));
         seedInput.setColorTooltips(TooltipColorUtil.builder()
-                .withText(MessageUtil.getMessage("ui.tooltip.map.seed"), Color.WHITE)
+                .withText(MessageUtil.getMessage("ui.tooltip.map.seed"), ColorPresent.getTooltipItemName())
                 .build());
         seedInput.addFocusListener(new FocusListener() {
             private String textGet = null;
@@ -305,12 +339,13 @@ public class MainFrame extends JFrame {
                     List<RecipeAnvil> savedRecipe = buttonScroll.getNowChooseRecipes();
                     if (!savedRecipe.isEmpty()) {
                         try {
+                            // 计算目标值
                             long _seed = Long.parseLong(seed);
                             int target = new XoroshiroRandomUtil().calcTarget(_seed, savedRecipe.get(0).toResourceLocationStr());
                             targetInput.setText(String.valueOf(target));
-                            calcResults();
+                            calcResults(progressFeedback);
                         } catch (NumberFormatException ignored) {
-                            targetInput.setText("0");
+                            seedInput.setText("0");
                             log.error(MessageUtil.getMessage("log.func.calc.wrong.seed"));
                         }
                     }
@@ -389,6 +424,9 @@ public class MainFrame extends JFrame {
                 ConfigUtil.INSTANCE.getAnvilAssetUITargetNowStartY() * ConfigUtil.INSTANCE.getScaleUI());
         targetNowIcon.setSize(new Dimension(_targetNowIcon.getWidth(), _targetNowIcon.getHeight()));
         this.add(targetNowIcon);
+        // Done
+        this.revalidate();
+        this.repaint();
     }
 
     /**
@@ -432,9 +470,12 @@ public class MainFrame extends JFrame {
     /**
      * 打开合成结果选择页面
      *
-     * @param sourceButton 事件触发按钮，会根据此按钮读取其他几个按钮的已选配方数据
+     * @param sourceButton     事件触发按钮，会根据此按钮读取其他几个按钮的已选配方数据
+     * @param progressFeedback 进度反馈
      */
-    private void openRecipeResultScreen(ImageJButton sourceButton) {
+    private void openRecipeResultScreen(ImageJButton sourceButton, Consumer<String> progressFeedback) {
+        if (progressFeedback != null)
+            progressFeedback.accept(MessageUtil.getMessage("ui.title.loading.resource", 1, 1, ""));
         List<ResourceLocation> recipes = new ArrayList<>();
         ResourceManager.getResources((namespace, resource) -> resource instanceof RecipeAnvil recipeR && "tfc:anvil".equals(recipeR.getType()))
                 .values().forEach(recipes::addAll);
@@ -459,6 +500,8 @@ public class MainFrame extends JFrame {
             }
             return o1ItemName.compareTo(o2ItemName);
         }).collect(Collectors.toList());
+        if (progressFeedback != null)
+            progressFeedback.accept(MessageUtil.getMessage("ui.title.loading.resource", 0, recipes.size(), ""));
         // 加载背景图
         BufferedImage asset = getTfcAnvilAsset();
         if (asset == null)
@@ -523,8 +566,10 @@ public class MainFrame extends JFrame {
             });
             recipeResultScrollPanePanel.add(backButton);
         }
-        for (ResourceLocation rl : recipes) {
-            RecipeAnvil recipe = (RecipeAnvil) rl;
+        for (int i = 0, recipesSize = recipes.size(); i < recipesSize; i++) {
+            if (progressFeedback != null)
+                progressFeedback.accept(MessageUtil.getMessage("ui.title.loading.resource", i + 1, recipesSize, ""));
+            RecipeAnvil recipe = (RecipeAnvil) recipes.get(i);
             String itemId;
             if (sourceButton == this.buttonScroll) {
                 if (recipe.getResult() == null) {
@@ -705,14 +750,14 @@ public class MainFrame extends JFrame {
                         int target = new XoroshiroRandomUtil().calcTarget(_seed, savedRecipe.get(0).toResourceLocationStr());
                         this.targetInput.setText(String.valueOf(target));
                     } catch (NumberFormatException ignored) {
-                        this.targetInput.setText("0");
+                        this.seedInput.setText("0");
                         log.error(MessageUtil.getMessage("log.func.calc.wrong.seed"));
                     }
                 }
                 this.targetNowInput.setText("0");
                 String target = this.targetInput.getText();
                 if (target != null && !"0".equals(target)) {
-                    calcResults();
+                    calcResults(progressFeedback);
                 }
                 recipeResultPanel.removeAll();
                 this.mainFrame.remove(recipeResultPanel);
@@ -755,9 +800,11 @@ public class MainFrame extends JFrame {
     /**
      * 计算并打印结果集
      */
-    private void calcResults() {
+    private void calcResults(Consumer<String> progressFeedback) {
+        if (progressFeedback != null)
+            progressFeedback.accept(MessageUtil.getMessage("ui.title.calculating"));
         String target = this.targetInput.getText();
-        String targetNow = this.targetInput.getText();
+        String targetNow = this.targetNowInput.getText();
         List<RecipeAnvil> nowChooseRecipes = this.buttonScroll.getNowChooseRecipes();
         if (target != null && !target.isEmpty() && !nowChooseRecipes.isEmpty()) {
             this.outputArea.removeAll();
@@ -765,7 +812,10 @@ public class MainFrame extends JFrame {
             List<String> rules = recipe.getRules();
             boolean containsHit = false;
             for (String r : rules) {
-                if (r.split("_").length > 1 && AnvilFuncStep.HIT.getId().equals(r.split("_")[1])) {
+                if (r != null && r.startsWith(AnvilFuncStep.HIT.getId()) &&
+                        !r.startsWith(AnvilFuncStep.HIT_HARD.getId()) &&
+                        !r.startsWith(AnvilFuncStep.HIT_MEDIUM.getId()) &&
+                        !r.startsWith(AnvilFuncStep.HIT_LIGHT.getId())) {
                     containsHit = true;
                     break;
                 }
@@ -791,13 +841,12 @@ public class MainFrame extends JFrame {
                 return order2n - order1n;
             });
             List<List<Integer>> resultL = new ArrayList<>();
-            for (int rIndex = 0; rIndex < (containsHit ? 1 : 3); rIndex++) {
+            for (int rIndex = 0; rIndex < (containsHit ? 3 : 1); rIndex++) {
                 int[] rule = new int[rules.size()];
-                for (int i = 0; i < rules.size(); i++) {
-                    String step = rules.get(i).split("_")[0];
-                    AnvilFuncStep anvilFuncStep = AnvilFuncStep.findById(step);
+                for (int i = 0; i < rules.size(); i++) { // TODO 以及此处的逻辑也有问题：比如配方都是HIT时，加入rule的都是同一个元素如轻击，并不能将全部可能性带出
+                    AnvilFuncStep anvilFuncStep = AnvilFuncStep.findByKey(rules.get(i));
                     if (anvilFuncStep == null) {
-                        log.error(MessageUtil.getMessage("log.func.rule.wrong.step", step));
+                        log.error(MessageUtil.getMessage("log.func.rule.wrong.step", rules.get(i)));
                     } else if (anvilFuncStep == AnvilFuncStep.HIT) {
                         rule[i] = (rIndex == 0 ? AnvilFuncStep.HIT_LIGHT : (rIndex == 1 ? AnvilFuncStep.HIT_MEDIUM : AnvilFuncStep.HIT_HARD)).getVal();
                     } else {
@@ -883,6 +932,8 @@ public class MainFrame extends JFrame {
                 }
             }
         }
+        if (progressFeedback != null)
+            progressFeedback.accept(MessageUtil.getMessage("ui.title"));
     }
 
     /**
@@ -1266,44 +1317,64 @@ public class MainFrame extends JFrame {
             if (s.length < 2) {
                 log.warn(MessageUtil.getMessage("log.func.rule.wrong.string.format", ruleName));
             }
-            anvilFuncStep = AnvilFuncStep.findById(s[0]);
+            anvilFuncStep = AnvilFuncStep.findByKey(ruleName);
             if (anvilFuncStep == null) {
-                log.warn(MessageUtil.getMessage("log.func.rule.wrong.step", s[0]));
+                log.warn(MessageUtil.getMessage("log.func.rule.wrong.step", ruleName));
             } else {
                 switch (anvilFuncStep) {
-                    case HIT -> builder.withText(getLocaleText("tfc.enum.forgestep.hit"), Color.WHITE);
-                    case HIT_LIGHT -> builder.withText(getLocaleText("tfc.enum.forgestep.hit_light"), Color.WHITE);
-                    case HIT_MEDIUM -> builder.withText(getLocaleText("tfc.enum.forgestep.hit_medium"), Color.WHITE);
-                    case HIT_HARD -> builder.withText(getLocaleText("tfc.enum.forgestep.hit_hard"), Color.WHITE);
-                    case DRAW -> builder.withText(getLocaleText("tfc.enum.forgestep.draw"), Color.WHITE);
-                    case PUNCH -> builder.withText(getLocaleText("tfc.enum.forgestep.punch"), Color.WHITE);
-                    case BEND -> builder.withText(getLocaleText("tfc.enum.forgestep.bend"), Color.WHITE);
-                    case UPSET -> builder.withText(getLocaleText("tfc.enum.forgestep.upset"), Color.WHITE);
-                    case SHRINK -> builder.withText(getLocaleText("tfc.enum.forgestep.shrink"), Color.WHITE);
+                    case HIT -> builder.withText(getLocaleText("tfc.enum.forgestep.hit"), ColorPresent.getTooltipItemName());
+                    case HIT_LIGHT -> builder.withText(getLocaleText("tfc.enum.forgestep.hit_light"), ColorPresent.getTooltipItemName());
+                    case HIT_MEDIUM -> builder.withText(getLocaleText("tfc.enum.forgestep.hit_medium"), ColorPresent.getTooltipItemName());
+                    case HIT_HARD -> builder.withText(getLocaleText("tfc.enum.forgestep.hit_hard"), ColorPresent.getTooltipItemName());
+                    case DRAW -> builder.withText(getLocaleText("tfc.enum.forgestep.draw"), ColorPresent.getTooltipItemName());
+                    case PUNCH -> builder.withText(getLocaleText("tfc.enum.forgestep.punch"), ColorPresent.getTooltipItemName());
+                    case BEND -> builder.withText(getLocaleText("tfc.enum.forgestep.bend"), ColorPresent.getTooltipItemName());
+                    case UPSET -> builder.withText(getLocaleText("tfc.enum.forgestep.upset"), ColorPresent.getTooltipItemName());
+                    case SHRINK -> builder.withText(getLocaleText("tfc.enum.forgestep.shrink"), ColorPresent.getTooltipItemName());
                 }
             }
-            String order = ruleName.substring(ruleName.indexOf("_") + 1);
-            switch (order) {
-                case "any" -> builder.withText(" " + getLocaleText("tfc.enum.order.any"), Color.WHITE);
-                case "last" -> builder.withText(" " + getLocaleText("tfc.enum.order.last"), Color.WHITE);
-                case "not_last" -> builder.withText(" " + getLocaleText("tfc.enum.order.not_last"), Color.WHITE);
-                case "second_last" -> builder.withText(" " + getLocaleText("tfc.enum.order.second_last"), Color.WHITE);
-                case "third_last" -> builder.withText(" " + getLocaleText("tfc.enum.order.third_last"), Color.WHITE);
-                default -> log.warn(MessageUtil.getMessage("log.func.rule.wrong.order", order));
+            String order = AnvilFuncStep.takeOrderFromKey(ruleName);
+            if (order == null) {
+                log.warn(MessageUtil.getMessage("log.func.rule.wrong.order", ruleName));
+            } else {
+                switch (order) {
+                    case "any" -> builder.withText(" " + getLocaleText("tfc.enum.order.any"), ColorPresent.getTooltipItemName());
+                    case "last" -> builder.withText(" " + getLocaleText("tfc.enum.order.last"), ColorPresent.getTooltipItemName());
+                    case "not_last" -> builder.withText(" " + getLocaleText("tfc.enum.order.not_last"), ColorPresent.getTooltipItemName());
+                    case "second_last" -> builder.withText(" " + getLocaleText("tfc.enum.order.second_last"), ColorPresent.getTooltipItemName());
+                    case "third_last" -> builder.withText(" " + getLocaleText("tfc.enum.order.third_last"), ColorPresent.getTooltipItemName());
+                    default -> log.warn(MessageUtil.getMessage("log.func.rule.wrong.order", order));
+                }
+            }
+            if (anvilFuncStep != null) {
+                if (anvilFuncStep == AnvilFuncStep.HIT) {
+                    builder.withNewLine().withText(AnvilFuncStep.HIT_LIGHT.getVal() + "/" + AnvilFuncStep.HIT_MEDIUM.getVal() + "/" + AnvilFuncStep.HIT_HARD.getVal(), ColorPresent.getTooltipItemDesc());
+                } else {
+                    builder.withNewLine().withText(String.valueOf(anvilFuncStep.getVal()), ColorPresent.getTooltipItemDesc());
+                }
             }
             return builder.build();
         } else {
             // 只有step
             switch (anvilFuncStep) {
-                case HIT -> builder.withText(getLocaleText("tfc.enum.forgestep.hit"), Color.WHITE);
-                case HIT_LIGHT -> builder.withText(getLocaleText("tfc.enum.forgestep.hit_light"), Color.WHITE);
-                case HIT_MEDIUM -> builder.withText(getLocaleText("tfc.enum.forgestep.hit_medium"), Color.WHITE);
-                case HIT_HARD -> builder.withText(getLocaleText("tfc.enum.forgestep.hit_hard"), Color.WHITE);
-                case DRAW -> builder.withText(getLocaleText("tfc.enum.forgestep.draw"), Color.WHITE);
-                case PUNCH -> builder.withText(getLocaleText("tfc.enum.forgestep.punch"), Color.WHITE);
-                case BEND -> builder.withText(getLocaleText("tfc.enum.forgestep.bend"), Color.WHITE);
-                case UPSET -> builder.withText(getLocaleText("tfc.enum.forgestep.upset"), Color.WHITE);
-                case SHRINK -> builder.withText(getLocaleText("tfc.enum.forgestep.shrink"), Color.WHITE);
+                case HIT -> builder.withText(getLocaleText("tfc.enum.forgestep.hit"), ColorPresent.getTooltipItemName())
+                        .withNewLine().withText(AnvilFuncStep.HIT_LIGHT.getVal() + "/" + AnvilFuncStep.HIT_MEDIUM.getVal() + "/" + AnvilFuncStep.HIT_HARD.getVal(), ColorPresent.getTooltipItemDesc());
+                case HIT_LIGHT -> builder.withText(getLocaleText("tfc.enum.forgestep.hit_light"), ColorPresent.getTooltipItemName())
+                        .withNewLine().withText(String.valueOf(anvilFuncStep.getVal()), ColorPresent.getTooltipItemDesc());
+                case HIT_MEDIUM -> builder.withText(getLocaleText("tfc.enum.forgestep.hit_medium"), ColorPresent.getTooltipItemName())
+                        .withNewLine().withText(String.valueOf(anvilFuncStep.getVal()), ColorPresent.getTooltipItemDesc());
+                case HIT_HARD -> builder.withText(getLocaleText("tfc.enum.forgestep.hit_hard"), ColorPresent.getTooltipItemName())
+                        .withNewLine().withText(String.valueOf(anvilFuncStep.getVal()), ColorPresent.getTooltipItemDesc());
+                case DRAW -> builder.withText(getLocaleText("tfc.enum.forgestep.draw"), ColorPresent.getTooltipItemName())
+                        .withNewLine().withText(String.valueOf(anvilFuncStep.getVal()), ColorPresent.getTooltipItemDesc());
+                case PUNCH -> builder.withText(getLocaleText("tfc.enum.forgestep.punch"), ColorPresent.getTooltipItemName())
+                        .withNewLine().withText(String.valueOf(anvilFuncStep.getVal()), ColorPresent.getTooltipItemDesc());
+                case BEND -> builder.withText(getLocaleText("tfc.enum.forgestep.bend"), ColorPresent.getTooltipItemName())
+                        .withNewLine().withText(String.valueOf(anvilFuncStep.getVal()), ColorPresent.getTooltipItemDesc());
+                case UPSET -> builder.withText(getLocaleText("tfc.enum.forgestep.upset"), ColorPresent.getTooltipItemName())
+                        .withNewLine().withText(String.valueOf(anvilFuncStep.getVal()), ColorPresent.getTooltipItemDesc());
+                case SHRINK -> builder.withText(getLocaleText("tfc.enum.forgestep.shrink"), ColorPresent.getTooltipItemName())
+                        .withNewLine().withText(String.valueOf(anvilFuncStep.getVal()), ColorPresent.getTooltipItemDesc());
             }
             return builder.build();
         }
@@ -1324,7 +1395,11 @@ public class MainFrame extends JFrame {
         if (asset == null) {
             return null;
         }
-        String order = ruleName.substring(ruleName.indexOf("_") + 1);
+        String order = AnvilFuncStep.takeOrderFromKey(ruleName);
+        if (order == null) {
+            log.warn(MessageUtil.getMessage("log.func.rule.wrong.order", ruleName));
+            return new BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB);
+        }
         BufferedImage frame = null;
         switch (order) {
             case "any" -> frame = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameAnyX(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameAnyY(),
@@ -1390,9 +1465,9 @@ public class MainFrame extends JFrame {
             frame = replaceFrameMiddle.filter(frame, null);
             frame = scaleGlobally(frame);
             BufferedImage icon = null;
-            AnvilFuncStep anvilFuncStep = AnvilFuncStep.findById(s[0]);
+            AnvilFuncStep anvilFuncStep = AnvilFuncStep.findByKey(ruleName);
             if (anvilFuncStep == null) {
-                log.warn(MessageUtil.getMessage("log.func.rule.wrong.step", s[0]));
+                log.warn(MessageUtil.getMessage("log.func.rule.wrong.step", ruleName));
             } else {
                 switch (anvilFuncStep) {
                     case HIT, HIT_MEDIUM -> icon = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIHitMediumX(), ConfigUtil.INSTANCE.getAnvilAssetUIHitMediumY(),
@@ -1435,6 +1510,10 @@ public class MainFrame extends JFrame {
      * 配方按钮点击后选择配方事件
      */
     private class RecipeJButtonMouseAdapter extends MouseAdapter {
+        private Consumer<String> progressFeedback;
+        public RecipeJButtonMouseAdapter(Consumer<String> progressFeedback) {
+            this.progressFeedback = progressFeedback;
+        }
         @Override
         public void mouseClicked(MouseEvent e) {
             ImageJButton source = (ImageJButton) e.getSource();
@@ -1442,12 +1521,14 @@ public class MainFrame extends JFrame {
                 if (e.getButton() == MouseEvent.BUTTON1) {
                     // 打开合成窗口，显示合成结果列表
                     source.setEnabled(false);
-                    openRecipeResultScreen(source);
+                    openRecipeResultScreen(source, this.progressFeedback);
+                    if (progressFeedback != null)
+                        progressFeedback.accept(MessageUtil.getMessage("ui.title"));
                     source.setEnabled(true);
                 } else if (e.getButton() == MouseEvent.BUTTON3) {
                     // 清除合成结果选择
                     source.setEnabled(false);
-                    source.setColorTooltips(null);
+                    source.setColorTooltips(getButtonScrollEmptyTooltip(source));
                     source.getNowChooseRecipes().clear();
                     if (source == buttonScroll) {
                         BufferedImage icon = getButtonScrollIcon(null, true);
@@ -1461,6 +1542,26 @@ public class MainFrame extends JFrame {
                 }
             }
         }
+    }
+
+    /**
+     * 获取配方按钮和素材按钮的空置提示框
+     *
+     * @param source 事件来源
+     * @return Tooltip
+     */
+    private List<TooltipColorUtil.TooltipColor> getButtonScrollEmptyTooltip(ImageJButton source) {
+        String key;
+        if (source == this.buttonMainMaterial) {
+            key = "ui.button.choose.main.material.tooltip";
+        } else if (source == this.buttonOffMaterial) {
+            key = "ui.button.choose.off.material.tooltip";
+        } else {
+            key = "ui.button.choose.result.tooltip";
+        }
+        return TooltipColorUtil.builder()
+                .withText(MessageUtil.getMessage(key), ColorPresent.getTooltipItemName())
+                .build();
     }
 
 }

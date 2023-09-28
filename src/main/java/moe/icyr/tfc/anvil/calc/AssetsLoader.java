@@ -13,6 +13,7 @@ import org.tomlj.TomlParseResult;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -30,8 +31,10 @@ public class AssetsLoader {
     /**
      * 加载mod文件内资源
      */
-    public void loadMods() {
+    public void loadMods(Consumer<String> progressFeedback) {
         // 散装Debug时为项目根路径，打包运行后为exe所在路径
+        if (progressFeedback != null)
+            progressFeedback.accept(MessageUtil.getMessage("ui.title.loading.resource", 0, 0, ""));
         File runLocation = new File(System.getProperty("user.dir")).getAbsoluteFile();
         log.debug(MessageUtil.getMessage("log.load.work.dir", runLocation));
         File modsFolder = new File(runLocation, "mods");
@@ -45,7 +48,10 @@ public class AssetsLoader {
                 log.warn(MessageUtil.getMessage("ui.label.no.tfc.jar"));
                 return;
             }
-            for (File mod : files) {
+            for (int i = 0; i < files.length; i++) {
+                File mod = files[i];
+                if (progressFeedback != null)
+                    progressFeedback.accept(MessageUtil.getMessage("ui.title.loading.resource", i + 1, files.length, ""));
                 if (!mod.isFile() || !mod.canRead()) {
                     continue;
                 }
@@ -58,7 +64,7 @@ public class AssetsLoader {
                 } catch (FileNotFoundException e) {
                     log.warn(MessageUtil.getMessage("log.load.mod.cant.find.mod.toml", mod.getPath()));
                     // 也许是mc本体
-                    loadMods(mod, name -> otherModsLoadPattern.matcher(name).matches());
+                    loadMods(mod, name -> otherModsLoadPattern.matcher(name).matches(), progressFeedback);
                     continue;
                 } catch (IOException e) {
                     log.error(MessageUtil.getMessage("log.load.mod.io.error", mod.getPath()), e);
@@ -82,10 +88,11 @@ public class AssetsLoader {
                                             name.startsWith("assets/tfc/textures/block/") ||
                                             name.startsWith("data/tfc/recipes/anvil/") ||
                                             name.startsWith("data/tfc/tags/") ||
-                                            name.startsWith("data/forge/tags/"));
+                                            name.startsWith("data/forge/tags/"),
+                                    progressFeedback);
                         } else {
                             // 其他mod
-                            loadMods(mod, name -> otherModsLoadPattern.matcher(name).matches());
+                            loadMods(mod, name -> otherModsLoadPattern.matcher(name).matches(), progressFeedback);
                         }
                     }
                 }
@@ -93,7 +100,7 @@ public class AssetsLoader {
         }
     }
 
-    private void loadMods(File mod, Predicate<String> ifFileNeeded) {
+    private void loadMods(File mod, Predicate<String> ifFileNeeded, Consumer<String> progressFeedback) {
         Map<String, byte[]> modMod;
         try {
             modMod = JarUtil.fullyLoadInMemory(mod, ifFileNeeded);
@@ -101,7 +108,14 @@ public class AssetsLoader {
             log.error(MessageUtil.getMessage("log.load.mod.entry.failed", mod.getPath()), e);
             return;
         }
+        int i = 0, imax = modMod.entrySet().size();
+        String modFileName = mod.getName();
+        if (modFileName.lastIndexOf("/") != -1) {
+            modFileName = modFileName.substring(modFileName.lastIndexOf("/") + 1);
+        }
         for (Map.Entry<String, byte[]> entry : modMod.entrySet()) {
+            if (progressFeedback != null)
+                progressFeedback.accept(MessageUtil.getMessage("ui.title.loading.resource", i + 1, imax, modFileName));
             ResourceLocation resourceLocation;
             try {
                 resourceLocation = AssetsUtil.readResourceFromData(mod.getName(), entry.getKey(), entry.getValue());
@@ -112,6 +126,7 @@ public class AssetsLoader {
             if (!ResourceManager.putResource(resourceLocation)) {
                 log.warn(MessageUtil.getMessage("log.load.mod.cant.store", resourceLocation));
             }
+            i++;
         }
     }
 

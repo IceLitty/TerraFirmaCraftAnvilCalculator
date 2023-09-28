@@ -10,8 +10,6 @@ import lombok.NonNull;
 @Getter
 public enum AnvilFuncStep {
 
-    HIT("hit", null),
-
     DRAW("draw", -15),
     HIT_HARD("hit_hard", -9),
     HIT_MEDIUM("hit_medium", -6),
@@ -20,6 +18,8 @@ public enum AnvilFuncStep {
     BEND("bend", 7),
     UPSET("upset", 13),
     SHRINK("shrink", 16),
+    //
+    HIT("hit", null),
     ;
 
     private final String id;
@@ -42,6 +42,15 @@ public enum AnvilFuncStep {
     public static AnvilFuncStep findByVal(int val) {
         for (AnvilFuncStep step : AnvilFuncStep.values()) {
             if (step.getVal() != null && step.getVal() == val) {
+                return step;
+            }
+        }
+        return null;
+    }
+
+    public static AnvilFuncStep findByKey(@NonNull String key) {
+        for (AnvilFuncStep step : AnvilFuncStep.values()) {
+            if (key.startsWith(step.getId())) {
                 return step;
             }
         }

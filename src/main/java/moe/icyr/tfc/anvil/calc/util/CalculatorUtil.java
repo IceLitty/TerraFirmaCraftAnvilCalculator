@@ -26,7 +26,7 @@ public class CalculatorUtil {
      */
     public static Integer[] calc(int targetNow, int target, int[] rules) {
         for (int rule : rules) {
-            target = target + rule;
+            target = target - rule;
         }
         Tree root = new Tree(null);
         calcInternal(targetNow, target, root, func.length - 1);
@@ -48,7 +48,9 @@ public class CalculatorUtil {
      * @param funcIndex 用于递归减除的操作数下标
      */
     private static void calcInternal(int targetNow, int target, Tree treeNode, int funcIndex) {
-        if (targetNow + func[funcIndex] < target || funcIndex == 0) {
+        if (targetNow == target) {
+            // 不用计算，结束
+        } else if (targetNow + func[funcIndex] < target || funcIndex == 0) {
             // 追进目标值 或 找到最小操作数，但目标值仍比结果数小，追退目标值
             Tree treeLesser = new Tree(func[funcIndex]);
             treeNode.addChildren(treeLesser);
