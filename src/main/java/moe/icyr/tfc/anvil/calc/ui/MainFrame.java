@@ -2,6 +2,7 @@ package moe.icyr.tfc.anvil.calc.ui;
 
 import lombok.extern.slf4j.Slf4j;
 import moe.icyr.tfc.anvil.calc.AssetsLoader;
+import moe.icyr.tfc.anvil.calc.entity.AnvilFuncStep;
 import moe.icyr.tfc.anvil.calc.formatter.RangeIntegerFormat;
 import moe.icyr.tfc.anvil.calc.resource.*;
 import moe.icyr.tfc.anvil.calc.util.*;
@@ -41,6 +42,8 @@ public class MainFrame extends JFrame {
     private ImageJButton ruleLeft;
     private ImageJButton ruleMiddle;
     private ImageJButton ruleRight;
+    private ImageJButton targetIcon;
+    private ImageJButton targetNowIcon;
 
     public MainFrame() throws HeadlessException {
         // TODO 改为先显示空面板，标题显示加载资源进度条
@@ -104,6 +107,7 @@ public class MainFrame extends JFrame {
         g.drawImage(anvilBackpackImg, ConfigUtil.INSTANCE.getAnvilAssetUIBackpackX(), ConfigUtil.INSTANCE.getAnvilAssetUIBackpackY(), null);
         // 将技术图标绘制在技术操作按钮上
         AffineTransform iconTechTransform = new AffineTransform();
+        // 32x32 to 16x16
         iconTechTransform.setToScale(0.5, 0.5);
         AffineTransformOp iconTechTransformOp = new AffineTransformOp(iconTechTransform, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
         BufferedImage _iconPunch = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIPunchX(), ConfigUtil.INSTANCE.getAnvilAssetUIPunchY(),
@@ -207,11 +211,14 @@ public class MainFrame extends JFrame {
             public void focusLost(FocusEvent e) {
                 String target = targetInput.getText();
                 if (target != null && !target.isBlank() && !target.equals(textGet)) {
-                    log.debug("changed! " + target);
                     if (seedInput.getText() != null && !seedInput.getText().isBlank() && !buttonScroll.getNowChooseRecipes().isEmpty()) {
                         // TODO 提前统计全部配方的MD5，然后根据固定逆向顺序将target还原成map seed
                     }
-                    // TODO 调整红色箭头 自动执行计算
+                    // 调整红色箭头
+                    int t = Math.max(Math.min(145, Integer.parseInt(target)), 0);
+                    targetIcon.setLocation((ConfigUtil.INSTANCE.getAnvilAssetUITargetStartX() + t) * ConfigUtil.INSTANCE.getScaleUI(),
+                            (ConfigUtil.INSTANCE.getAnvilAssetUITargetStartY() + t) * ConfigUtil.INSTANCE.getScaleUI());
+                    calcResults();
                 }
             }
         });
@@ -249,8 +256,11 @@ public class MainFrame extends JFrame {
             public void focusLost(FocusEvent e) {
                 String targetNow = targetNowInput.getText();
                 if (targetNow != null && !targetNow.isBlank() && !targetNow.equals(textGet)) {
-                    log.debug("changed! " + targetNow);
-                    // TODO 调整绿色箭头 自动执行计算
+                    // 调整绿色箭头
+                    int t = Math.max(Math.min(145, Integer.parseInt(targetNow)), 0);
+                    targetNowIcon.setLocation((ConfigUtil.INSTANCE.getAnvilAssetUITargetNowStartX() + t) * ConfigUtil.INSTANCE.getScaleUI(),
+                            (ConfigUtil.INSTANCE.getAnvilAssetUITargetNowStartY() + t) * ConfigUtil.INSTANCE.getScaleUI());
+                    calcResults();
                 }
             }
         });
@@ -288,13 +298,17 @@ public class MainFrame extends JFrame {
             public void focusLost(FocusEvent e) {
                 String seed = seedInput.getText();
                 if (seed != null && !seed.isBlank() && !seed.equals(textGet)) {
+                    int testLong = seed.replaceAll("\\D", "").length();
+                    if (seed.startsWith("-") ? testLong != seed.length() - 1 : testLong != seed.length()) {
+                        seedInput.setText(seed.startsWith("-") ? "-" + seed.replaceAll("\\D", "") : seed.replaceAll("\\D", ""));
+                    }
                     List<RecipeAnvil> savedRecipe = buttonScroll.getNowChooseRecipes();
                     if (!savedRecipe.isEmpty()) {
                         try {
                             long _seed = Long.parseLong(seed);
                             int target = new XoroshiroRandomUtil().calcTarget(_seed, savedRecipe.get(0).toResourceLocationStr());
                             targetInput.setText(String.valueOf(target));
-                            // TODO 自动执行计算
+                            calcResults();
                         } catch (NumberFormatException ignored) {
                             targetInput.setText("0");
                             log.error(MessageUtil.getMessage("log.func.calc.wrong.seed"));
@@ -324,6 +338,7 @@ public class MainFrame extends JFrame {
         outputArea.setLocation(ConfigUtil.INSTANCE.getScaleUI(), ConfigUtil.INSTANCE.getScaleUI());
         outputArea.setSize(new Dimension((ConfigUtil.INSTANCE.getAnvilAssetUIBackpackWidth() - 2) * ConfigUtil.INSTANCE.getScaleUI(),
                 (ConfigUtil.INSTANCE.getAnvilAssetUIBackpackHeight() - 2) * ConfigUtil.INSTANCE.getScaleUI()));
+        outputArea.setLayout(new FlowLayout(FlowLayout.LEADING, 5, 5));
         this.outputScrollPane = new JScrollPane(outputArea, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         outputScrollPane.setOpaque(false);
         outputScrollPane.getViewport().setOpaque(false);
@@ -357,7 +372,23 @@ public class MainFrame extends JFrame {
         ruleRight.setSize(new Dimension(ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNotLastWidth() * ConfigUtil.INSTANCE.getScaleUI(),
                 ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNotLastHeight() * ConfigUtil.INSTANCE.getScaleUI()));
         this.add(ruleRight);
-        // TODO 红绿色箭头指示器
+        // 红绿色箭头指示器
+        BufferedImage _targetIcon = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUITargetX(), ConfigUtil.INSTANCE.getAnvilAssetUITargetY(),
+                ConfigUtil.INSTANCE.getAnvilAssetUITargetWidth(), ConfigUtil.INSTANCE.getAnvilAssetUITargetHeight());
+        _targetIcon = scaleGlobally(_targetIcon);
+        this.targetIcon = new ImageJButton(new ImageIcon(_targetIcon));
+        targetIcon.setLocation(ConfigUtil.INSTANCE.getAnvilAssetUITargetStartX() * ConfigUtil.INSTANCE.getScaleUI(),
+                ConfigUtil.INSTANCE.getAnvilAssetUITargetStartY() * ConfigUtil.INSTANCE.getScaleUI());
+        targetIcon.setSize(new Dimension(_targetIcon.getWidth(), _targetIcon.getHeight()));
+        this.add(targetIcon);
+        BufferedImage _targetNowIcon = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUITargetNowX(), ConfigUtil.INSTANCE.getAnvilAssetUITargetNowY(),
+                ConfigUtil.INSTANCE.getAnvilAssetUITargetNowWidth(), ConfigUtil.INSTANCE.getAnvilAssetUITargetNowHeight());
+        _targetNowIcon = scaleGlobally(_targetNowIcon);
+        this.targetNowIcon = new ImageJButton(new ImageIcon(_targetNowIcon));
+        targetNowIcon.setLocation(ConfigUtil.INSTANCE.getAnvilAssetUITargetNowStartX() * ConfigUtil.INSTANCE.getScaleUI(),
+                ConfigUtil.INSTANCE.getAnvilAssetUITargetNowStartY() * ConfigUtil.INSTANCE.getScaleUI());
+        targetNowIcon.setSize(new Dimension(_targetNowIcon.getWidth(), _targetNowIcon.getHeight()));
+        this.add(targetNowIcon);
     }
 
     /**
@@ -485,6 +516,8 @@ public class MainFrame extends JFrame {
                 this.ruleLeft.setVisible(true);
                 this.ruleMiddle.setVisible(true);
                 this.ruleRight.setVisible(true);
+                this.targetIcon.setVisible(true);
+                this.targetNowIcon.setVisible(true);
                 this.mainFrame.revalidate();
                 this.mainFrame.repaint();
             });
@@ -693,6 +726,8 @@ public class MainFrame extends JFrame {
                 this.ruleLeft.setVisible(true);
                 this.ruleMiddle.setVisible(true);
                 this.ruleRight.setVisible(true);
+                this.targetIcon.setVisible(true);
+                this.targetNowIcon.setVisible(true);
                 this.mainFrame.revalidate();
                 this.mainFrame.repaint();
             });
@@ -712,13 +747,142 @@ public class MainFrame extends JFrame {
         this.ruleLeft.setVisible(false);
         this.ruleMiddle.setVisible(false);
         this.ruleRight.setVisible(false);
+        this.targetIcon.setVisible(false);
+        this.targetNowIcon.setVisible(false);
         this.repaint();
     }
 
     /**
-     * TODO 读取UI中的target和rule，调用计算方法完成配方操作计算
+     * 计算并打印结果集
      */
     private void calcResults() {
+        String target = this.targetInput.getText();
+        String targetNow = this.targetInput.getText();
+        List<RecipeAnvil> nowChooseRecipes = this.buttonScroll.getNowChooseRecipes();
+        if (target != null && !target.isEmpty() && !nowChooseRecipes.isEmpty()) {
+            this.outputArea.removeAll();
+            RecipeAnvil recipe = nowChooseRecipes.get(0);
+            List<String> rules = recipe.getRules();
+            boolean containsHit = false;
+            for (String r : rules) {
+                if (r.split("_").length > 1 && AnvilFuncStep.HIT.getId().equals(r.split("_")[1])) {
+                    containsHit = true;
+                    break;
+                }
+            }
+            // 根据order排序
+            rules.sort((r1, r2) -> {
+                String order1 = AnvilFuncStep.takeOrderFromKey(r1);
+                String order2 = AnvilFuncStep.takeOrderFromKey(r2);
+                int order1n = switch (order1 == null ? r1 : order1) {
+                    case "last" -> -10;
+                    case "not_last" -> 1;
+                    case "second_last" -> 5;
+                    case "third_last" -> 10;
+                    default -> 0;
+                };
+                int order2n = switch (order2 == null ? r2 : order2) {
+                    case "last" -> -10;
+                    case "not_last" -> 1;
+                    case "second_last" -> 5;
+                    case "third_last" -> 10;
+                    default -> 0;
+                };
+                return order2n - order1n;
+            });
+            List<List<Integer>> resultL = new ArrayList<>();
+            for (int rIndex = 0; rIndex < (containsHit ? 1 : 3); rIndex++) {
+                int[] rule = new int[rules.size()];
+                for (int i = 0; i < rules.size(); i++) {
+                    String step = rules.get(i).split("_")[0];
+                    AnvilFuncStep anvilFuncStep = AnvilFuncStep.findById(step);
+                    if (anvilFuncStep == null) {
+                        log.error(MessageUtil.getMessage("log.func.rule.wrong.step", step));
+                    } else if (anvilFuncStep == AnvilFuncStep.HIT) {
+                        rule[i] = (rIndex == 0 ? AnvilFuncStep.HIT_LIGHT : (rIndex == 1 ? AnvilFuncStep.HIT_MEDIUM : AnvilFuncStep.HIT_HARD)).getVal();
+                    } else {
+                        rule[i] = anvilFuncStep.getVal();
+                    }
+                }
+                int _target = Integer.parseInt(target);
+                int _targetNow = 0;
+                if (targetNow != null && !targetNow.isEmpty()) {
+                    _targetNow = Integer.parseInt(targetNow);
+                }
+                Integer[] result = null;
+                try {
+                    result = CalculatorUtil.calc(_targetNow, _target, rule);
+                } catch (StackOverflowError e) {
+                    log.warn(MessageUtil.getMessage("ui.output.error", targetNow, target, Arrays.toString(rule)));
+                }
+                if (result != null) {
+                    List<Integer> result2 = new ArrayList<>(result.length + rule.length);
+                    result2.addAll(Arrays.asList(result));
+                    for (int r : rule) {
+                        result2.add(r);
+                    }
+                    resultL.add(result2);
+                }
+            }
+            if (resultL.isEmpty()) {
+                JLabel tips = new JLabel();
+                log.warn(MessageUtil.getMessage("ui.output.error", targetNow, target, rules));
+                this.outputArea.add(tips);
+            } else {
+                List<Integer> result = null;
+                for (List<Integer> r : resultL) {
+                    if (result == null) {
+                        result = r;
+                    } else if (r.size() < result.size()) {
+                        result = r;
+                    }
+                }
+                JLabel tips = new JLabel();
+                tips.setText(MessageUtil.getMessage("ui.output.message"));
+                this.outputArea.add(tips);
+                BufferedImage asset = getTfcAnvilAsset();
+                if (asset == null)
+                    return;
+                for (Integer r : result) {
+                    AnvilFuncStep anvilFuncStep = AnvilFuncStep.findByVal(r);
+                    if (anvilFuncStep == null) {
+                        log.error(MessageUtil.getMessage("log.func.rule.wrong.step.val", r));
+                        continue;
+                    }
+                    String step = anvilFuncStep.getId();
+                    BufferedImage _icon = switch (anvilFuncStep) {
+                        case DRAW ->
+                                asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIDrawX(), ConfigUtil.INSTANCE.getAnvilAssetUIDrawY(),
+                                        ConfigUtil.INSTANCE.getAnvilAssetUIDrawWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIDrawHeight());
+                        case HIT_HARD ->
+                                asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIHitHeavyX(), ConfigUtil.INSTANCE.getAnvilAssetUIHitHeavyY(),
+                                        ConfigUtil.INSTANCE.getAnvilAssetUIHitHeavyWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIHitHeavyHeight());
+                        case HIT, HIT_MEDIUM ->
+                                asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIHitMediumX(), ConfigUtil.INSTANCE.getAnvilAssetUIHitMediumY(),
+                                        ConfigUtil.INSTANCE.getAnvilAssetUIHitMediumWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIHitMediumHeight());
+                        case HIT_LIGHT ->
+                                asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIHitLightX(), ConfigUtil.INSTANCE.getAnvilAssetUIHitLightY(),
+                                        ConfigUtil.INSTANCE.getAnvilAssetUIHitLightWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIHitLightHeight());
+                        case PUNCH ->
+                                asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIPunchX(), ConfigUtil.INSTANCE.getAnvilAssetUIPunchY(),
+                                        ConfigUtil.INSTANCE.getAnvilAssetUIPunchWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIPunchHeight());
+                        case BEND ->
+                                asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIBendX(), ConfigUtil.INSTANCE.getAnvilAssetUIBendY(),
+                                        ConfigUtil.INSTANCE.getAnvilAssetUIBendWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIBendHeight());
+                        case UPSET ->
+                                asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIUpsetX(), ConfigUtil.INSTANCE.getAnvilAssetUIUpsetY(),
+                                        ConfigUtil.INSTANCE.getAnvilAssetUIUpsetWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIUpsetHeight());
+                        case SHRINK ->
+                                asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIShrinkX(), ConfigUtil.INSTANCE.getAnvilAssetUIShrinkY(),
+                                        ConfigUtil.INSTANCE.getAnvilAssetUIShrinkWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIShrinkHeight());
+                    };
+                    ImageJButton icon = new ImageJButton(new ImageIcon(_icon));
+                    icon.setSize(_icon.getWidth(), _icon.getHeight());
+                    icon.setColorTooltips(getRuleTooltip(step));
+                    this.outputArea.add(icon);
+                }
+            }
+        }
     }
 
     /**
@@ -1094,65 +1258,55 @@ public class MainFrame extends JFrame {
      * @return 显示文本
      */
     private static List<TooltipColorUtil.TooltipColor> getRuleTooltip(String ruleName) {
-        String[] s = ruleName.split("_");
-        if (s.length < 2) {
-            log.warn(MessageUtil.getMessage("log.func.rule.wrong.string.format", ruleName));
-        }
+        AnvilFuncStep anvilFuncStep = AnvilFuncStep.findById(ruleName);
         TooltipColorUtil.Builder builder = TooltipColorUtil.builder();
-        switch (s[0]) {
-            case "hit" -> {
-                builder.withText(getLocaleText("tfc.enum.forgestep.hit"), Color.WHITE);
+        if (anvilFuncStep == null) {
+            // 必须包含step和order
+            String[] s = ruleName.split("_");
+            if (s.length < 2) {
+                log.warn(MessageUtil.getMessage("log.func.rule.wrong.string.format", ruleName));
             }
-            case "hit_light" -> {
-                builder.withText(getLocaleText("tfc.enum.forgestep.hit_light"), Color.WHITE);
-            }
-            case "hit_medium" -> {
-                builder.withText(getLocaleText("tfc.enum.forgestep.hit_medium"), Color.WHITE);
-            }
-            case "hit_hard" -> {
-                builder.withText(getLocaleText("tfc.enum.forgestep.hit_hard"), Color.WHITE);
-            }
-            case "draw" -> {
-                builder.withText(getLocaleText("tfc.enum.forgestep.draw"), Color.WHITE);
-            }
-            case "punch" -> {
-                builder.withText(getLocaleText("tfc.enum.forgestep.punch"), Color.WHITE);
-            }
-            case "bend" -> {
-                builder.withText(getLocaleText("tfc.enum.forgestep.bend"), Color.WHITE);
-            }
-            case "upset" -> {
-                builder.withText(getLocaleText("tfc.enum.forgestep.upset"), Color.WHITE);
-            }
-            case "shrink" -> {
-                builder.withText(getLocaleText("tfc.enum.forgestep.shrink"), Color.WHITE);
-            }
-            default -> {
+            anvilFuncStep = AnvilFuncStep.findById(s[0]);
+            if (anvilFuncStep == null) {
                 log.warn(MessageUtil.getMessage("log.func.rule.wrong.step", s[0]));
+            } else {
+                switch (anvilFuncStep) {
+                    case HIT -> builder.withText(getLocaleText("tfc.enum.forgestep.hit"), Color.WHITE);
+                    case HIT_LIGHT -> builder.withText(getLocaleText("tfc.enum.forgestep.hit_light"), Color.WHITE);
+                    case HIT_MEDIUM -> builder.withText(getLocaleText("tfc.enum.forgestep.hit_medium"), Color.WHITE);
+                    case HIT_HARD -> builder.withText(getLocaleText("tfc.enum.forgestep.hit_hard"), Color.WHITE);
+                    case DRAW -> builder.withText(getLocaleText("tfc.enum.forgestep.draw"), Color.WHITE);
+                    case PUNCH -> builder.withText(getLocaleText("tfc.enum.forgestep.punch"), Color.WHITE);
+                    case BEND -> builder.withText(getLocaleText("tfc.enum.forgestep.bend"), Color.WHITE);
+                    case UPSET -> builder.withText(getLocaleText("tfc.enum.forgestep.upset"), Color.WHITE);
+                    case SHRINK -> builder.withText(getLocaleText("tfc.enum.forgestep.shrink"), Color.WHITE);
+                }
             }
+            String order = ruleName.substring(ruleName.indexOf("_") + 1);
+            switch (order) {
+                case "any" -> builder.withText(" " + getLocaleText("tfc.enum.order.any"), Color.WHITE);
+                case "last" -> builder.withText(" " + getLocaleText("tfc.enum.order.last"), Color.WHITE);
+                case "not_last" -> builder.withText(" " + getLocaleText("tfc.enum.order.not_last"), Color.WHITE);
+                case "second_last" -> builder.withText(" " + getLocaleText("tfc.enum.order.second_last"), Color.WHITE);
+                case "third_last" -> builder.withText(" " + getLocaleText("tfc.enum.order.third_last"), Color.WHITE);
+                default -> log.warn(MessageUtil.getMessage("log.func.rule.wrong.order", order));
+            }
+            return builder.build();
+        } else {
+            // 只有step
+            switch (anvilFuncStep) {
+                case HIT -> builder.withText(getLocaleText("tfc.enum.forgestep.hit"), Color.WHITE);
+                case HIT_LIGHT -> builder.withText(getLocaleText("tfc.enum.forgestep.hit_light"), Color.WHITE);
+                case HIT_MEDIUM -> builder.withText(getLocaleText("tfc.enum.forgestep.hit_medium"), Color.WHITE);
+                case HIT_HARD -> builder.withText(getLocaleText("tfc.enum.forgestep.hit_hard"), Color.WHITE);
+                case DRAW -> builder.withText(getLocaleText("tfc.enum.forgestep.draw"), Color.WHITE);
+                case PUNCH -> builder.withText(getLocaleText("tfc.enum.forgestep.punch"), Color.WHITE);
+                case BEND -> builder.withText(getLocaleText("tfc.enum.forgestep.bend"), Color.WHITE);
+                case UPSET -> builder.withText(getLocaleText("tfc.enum.forgestep.upset"), Color.WHITE);
+                case SHRINK -> builder.withText(getLocaleText("tfc.enum.forgestep.shrink"), Color.WHITE);
+            }
+            return builder.build();
         }
-        String order = ruleName.substring(ruleName.indexOf("_") + 1);
-        switch (order) {
-            case "any" -> {
-                builder.withText(" " + getLocaleText("tfc.enum.order.any"), Color.WHITE);
-            }
-            case "last" -> {
-                builder.withText(" " + getLocaleText("tfc.enum.order.last"), Color.WHITE);
-            }
-            case "not_last" -> {
-                builder.withText(" " + getLocaleText("tfc.enum.order.not_last"), Color.WHITE);
-            }
-            case "second_last" -> {
-                builder.withText(" " + getLocaleText("tfc.enum.order.second_last"), Color.WHITE);
-            }
-            case "third_last" -> {
-                builder.withText(" " + getLocaleText("tfc.enum.order.third_last"), Color.WHITE);
-            }
-            default -> {
-                log.warn(MessageUtil.getMessage("log.func.rule.wrong.order", order));
-            }
-        }
-        return builder.build();
     }
 
     /**
@@ -1173,29 +1327,17 @@ public class MainFrame extends JFrame {
         String order = ruleName.substring(ruleName.indexOf("_") + 1);
         BufferedImage frame = null;
         switch (order) {
-            case "any" -> {
-                frame = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameAnyX(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameAnyY(),
-                        ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameAnyWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameAnyHeight());
-            }
-            case "last" -> {
-                frame = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameLastX(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameLastY(),
-                        ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameLastWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameLastHeight());
-            }
-            case "not_last" -> {
-                frame = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNotLastX(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNotLastY(),
-                        ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNotLastWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNotLastHeight());
-            }
-            case "second_last" -> {
-                frame = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNextToLastX(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNextToLastY(),
-                        ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNextToLastWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNextToLastHeight());
-            }
-            case "third_last" -> {
-                frame = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameThirdFromLastX(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameThirdFromLastY(),
-                        ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameThirdFromLastWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameThirdFromLastHeight());
-            }
-            default -> {
-                log.warn(MessageUtil.getMessage("log.func.rule.wrong.order", order));
-            }
+            case "any" -> frame = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameAnyX(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameAnyY(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameAnyWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameAnyHeight());
+            case "last" -> frame = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameLastX(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameLastY(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameLastWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameLastHeight());
+            case "not_last" -> frame = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNotLastX(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNotLastY(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNotLastWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNotLastHeight());
+            case "second_last" -> frame = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNextToLastX(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNextToLastY(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNextToLastWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameNextToLastHeight());
+            case "third_last" -> frame = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameThirdFromLastX(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameThirdFromLastY(),
+                    ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameThirdFromLastWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIRecipeFrameThirdFromLastHeight());
+            default -> log.warn(MessageUtil.getMessage("log.func.rule.wrong.order", order));
         }
         if (frame != null) {
             BufferedImageOp replaceFrame = new LookupOp(new ColorReplacer(new Color(
@@ -1248,41 +1390,27 @@ public class MainFrame extends JFrame {
             frame = replaceFrameMiddle.filter(frame, null);
             frame = scaleGlobally(frame);
             BufferedImage icon = null;
-            switch (s[0]) {
-                case "hit", "hit_medium" -> {
-                    icon = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIHitMediumX(), ConfigUtil.INSTANCE.getAnvilAssetUIHitMediumY(),
+            AnvilFuncStep anvilFuncStep = AnvilFuncStep.findById(s[0]);
+            if (anvilFuncStep == null) {
+                log.warn(MessageUtil.getMessage("log.func.rule.wrong.step", s[0]));
+            } else {
+                switch (anvilFuncStep) {
+                    case HIT, HIT_MEDIUM -> icon = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIHitMediumX(), ConfigUtil.INSTANCE.getAnvilAssetUIHitMediumY(),
                             ConfigUtil.INSTANCE.getAnvilAssetUIHitMediumWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIHitMediumHeight());
-                }
-                case "hit_light" -> {
-                    icon = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIHitLightX(), ConfigUtil.INSTANCE.getAnvilAssetUIHitLightY(),
+                    case HIT_LIGHT -> icon = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIHitLightX(), ConfigUtil.INSTANCE.getAnvilAssetUIHitLightY(),
                             ConfigUtil.INSTANCE.getAnvilAssetUIHitLightWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIHitLightHeight());
-                }
-                case "hit_hard" -> {
-                    icon = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIHitHeavyX(), ConfigUtil.INSTANCE.getAnvilAssetUIHitHeavyY(),
+                    case HIT_HARD -> icon = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIHitHeavyX(), ConfigUtil.INSTANCE.getAnvilAssetUIHitHeavyY(),
                             ConfigUtil.INSTANCE.getAnvilAssetUIHitHeavyWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIHitHeavyHeight());
-                }
-                case "draw" -> {
-                    icon = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIDrawX(), ConfigUtil.INSTANCE.getAnvilAssetUIDrawY(),
+                    case DRAW -> icon = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIDrawX(), ConfigUtil.INSTANCE.getAnvilAssetUIDrawY(),
                             ConfigUtil.INSTANCE.getAnvilAssetUIDrawWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIDrawHeight());
-                }
-                case "punch" -> {
-                    icon = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIPunchX(), ConfigUtil.INSTANCE.getAnvilAssetUIPunchY(),
+                    case PUNCH -> icon = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIPunchX(), ConfigUtil.INSTANCE.getAnvilAssetUIPunchY(),
                             ConfigUtil.INSTANCE.getAnvilAssetUIPunchWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIPunchHeight());
-                }
-                case "bend" -> {
-                    icon = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIBendX(), ConfigUtil.INSTANCE.getAnvilAssetUIBendY(),
+                    case BEND -> icon = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIBendX(), ConfigUtil.INSTANCE.getAnvilAssetUIBendY(),
                             ConfigUtil.INSTANCE.getAnvilAssetUIBendWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIBendHeight());
-                }
-                case "upset" -> {
-                    icon = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIUpsetX(), ConfigUtil.INSTANCE.getAnvilAssetUIUpsetY(),
+                    case UPSET -> icon = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIUpsetX(), ConfigUtil.INSTANCE.getAnvilAssetUIUpsetY(),
                             ConfigUtil.INSTANCE.getAnvilAssetUIUpsetWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIUpsetHeight());
-                }
-                case "shrink" -> {
-                    icon = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIShrinkX(), ConfigUtil.INSTANCE.getAnvilAssetUIShrinkY(),
+                    case SHRINK -> icon = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIShrinkX(), ConfigUtil.INSTANCE.getAnvilAssetUIShrinkY(),
                             ConfigUtil.INSTANCE.getAnvilAssetUIShrinkWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIShrinkHeight());
-                }
-                default -> {
-                    log.warn(MessageUtil.getMessage("log.func.rule.wrong.step", s[0]));
                 }
             }
             if (icon != null) {

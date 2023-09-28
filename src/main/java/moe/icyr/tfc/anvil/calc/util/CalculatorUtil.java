@@ -3,8 +3,6 @@ package moe.icyr.tfc.anvil.calc.util;
 import lombok.extern.slf4j.Slf4j;
 import moe.icyr.tfc.anvil.calc.entity.Tree;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,36 +14,7 @@ import java.util.List;
 public class CalculatorUtil {
 
     // draw, heavy, middle, light hit, punch, bend, upset, shrink
-    public static final int[] func = new int[]{-15, -9, -6, -3, 2, 7, 13, 16};
-
-//    public static void calc() {
-//        int targetNow = 0;
-//        int target = 75;
-//        int[] rules = new int[] {-3, 7, 2};
-//        for (int rule : rules) {
-//            target = target + rule;
-//        }
-//        Tree stored = new Tree(null);
-//        Instant start = Instant.now();
-//        calcInternal(targetNow, target, stored, func.length - 1);
-//        Instant end = Instant.now();
-//        System.out.println("Spend time: " + Duration.between(start, end).toMillis());
-//        System.out.println(stored);
-//        verify(targetNow, stored);
-//    }
-//
-//    public static void testAll() {
-//        for (int target = 0; target <= 145; target++) {
-//            for (int targetNow = 0; targetNow <= 145; targetNow++) {
-//                Tree root = new Tree(null);
-//                Instant start = Instant.now();
-//                calcInternal(targetNow, target, root, func.length - 1);
-//                Instant end = Instant.now();
-//                boolean verify = verify(targetNow, target, root);
-//                log.info("Target " + target + " TargetNow " + targetNow + " Spend time: " + Duration.between(start, end).toMillis() + " Verify: " + verify);
-//            }
-//        }
-//    }
+    private static final int[] func = new int[]{-15, -9, -6, -3, 2, 7, 13, 16};
 
     /**
      * 计算入口
@@ -103,40 +72,6 @@ public class CalculatorUtil {
             funcIndex--;
             calcInternal(targetNow, target, treeNode, funcIndex);
         }
-    }
-
-//    private static void verify(int initVal, Tree root) {
-//        List<Tree> endLeafs = root.getEndLeaf();
-//        StringBuilder strBuilder = new StringBuilder("TreeValid{\n");
-//        for (Tree endLeaf : endLeafs) {
-//            StringBuilder builder = new StringBuilder();
-//            int valNow = initVal;
-//            Tree leafNode = endLeaf;
-//            do {
-//                valNow = valNow + leafNode.getFunc();
-//                builder.insert(0, leafNode.getChildren().isEmpty() ? leafNode.getFunc() + "(" + valNow + ")" : leafNode.getFunc() + "(" + valNow + ") -> ");
-//                leafNode = leafNode.getParent();
-//            } while (leafNode.getParent() != null);
-//            strBuilder.append(builder).append("\n");
-//        }
-//        String string = strBuilder.append("}").toString();
-//        System.out.println(string);
-//    }
-
-    private static boolean verify(int initVal, int target, Tree root) {
-        List<Tree> endLeafs = root.getEndLeaf();
-        for (Tree endLeaf : endLeafs) {
-            int valNow = initVal;
-            Tree leafNode = endLeaf;
-            do {
-                valNow = valNow + leafNode.getFunc();
-                leafNode = leafNode.getParent();
-            } while (leafNode.getParent() != null);
-            if (valNow != target) {
-                return false;
-            }
-        }
-        return true;
     }
 
 }

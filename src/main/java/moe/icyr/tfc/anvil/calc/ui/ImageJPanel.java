@@ -4,6 +4,8 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
+ * 窗体面板
+ *
  * @author Icy
  * @since 2023/9/23
  */
