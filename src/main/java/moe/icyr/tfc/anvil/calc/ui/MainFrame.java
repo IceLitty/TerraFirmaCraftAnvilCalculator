@@ -45,6 +45,9 @@ public class MainFrame extends JFrame {
     public MainFrame() throws HeadlessException {
         // TODO 改为先显示空面板，标题显示加载资源进度条
         this.mainFrame = this;
+//        CalculatorUtil.calc(); // TODO debug
+//        if (true)
+//            return;
         // 加载配置文件
         log.debug(MessageUtil.getMessage("log.config.loaded", ConfigUtil.INSTANCE));
         AssetsLoader assetsLoader = new AssetsLoader();
@@ -208,6 +211,9 @@ public class MainFrame extends JFrame {
                 String target = targetInput.getText();
                 if (target != null && !target.isBlank() && !target.equals(textGet)) {
                     log.debug("changed! " + target);
+                    if (seedInput.getText() != null && !seedInput.getText().isBlank() && !buttonScroll.getNowChooseRecipes().isEmpty()) {
+                        // TODO 提前统计全部配方的MD5，然后根据固定逆向顺序将target还原成map seed
+                    }
                     // TODO 调整红色箭头 自动执行计算
                 }
             }
