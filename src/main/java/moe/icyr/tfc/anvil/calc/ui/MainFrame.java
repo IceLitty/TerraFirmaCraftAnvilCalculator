@@ -49,7 +49,6 @@ public class MainFrame extends JFrame {
     private ImageJButton targetNowIcon;
 
     public MainFrame() throws HeadlessException {
-        // TODO 改为先显示空面板，标题显示加载资源进度条
         this.mainFrame = this;
         // 加载配置文件
         log.debug(MessageUtil.getMessage("log.config.loaded", ConfigUtil.INSTANCE));
@@ -62,21 +61,13 @@ public class MainFrame extends JFrame {
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         AssetsLoader assetsLoader = new AssetsLoader();
         // 加载MOD资源包材质包
+        // TODO 尝试优化加载的资源项，尽量缩短加载时间
         assetsLoader.loadMods(this::setTitle);
         // 动态处理素材-加载窗体UI
         this.setTitle(MessageUtil.getMessage("ui.title.loading.ui", 2, 2));
         this.loadAnvilUI(this::setTitle);
-        // TODO 根据TFC铁砧UI加载工具UI界面，或者修改UI图改为内置
-        // TODO 加载type=tfc:anvil的recipe到铁砧配方对象（方便UI调用及后续按钮交互）
-        //  加载全部的input配方到UI的输入格点开的面板中，实现一个输入的配方及一个输入后筛选第二输入的物品列表
-        //  并且加载对应的物品材质创建配方按钮等UI元素
-        //  实现输入选择后自动带出输出或多个输出配方的情况下筛选输出选择面板
-        //  并且支持不选择输入的情况下显示全部的配方输出，反过来自动加载输入（也需要选择，不进行选择就获取不到配方ID，就没法自动算出实例seed及target值）
-        //  支持跳过配方选择，直接输入target值和rules进行计算
-        //  支持右键移除选中的配方物品、rules
-        //  面板添加地图seed输入框，默认0，必须数字，添加target，默认0，必须数字
-        //  定义一个新的STDOUT，配置logback将日志通过该流输出至界面上
-        // 设置tooltip时间
+        // TODO 支持跳过配方选择，直接输入target值和rules进行计算
+        // 设置全局Tooltip响应时间
         ToolTipManager.sharedInstance().setInitialDelay(0);
         ToolTipManager.sharedInstance().setDismissDelay(10000);
         this.setTitle(MessageUtil.getMessage("ui.title"));
@@ -108,7 +99,7 @@ public class MainFrame extends JFrame {
         BufferedImage anvilBackpackImg = new BufferedImage(ConfigUtil.INSTANCE.getAnvilAssetUIBackpackWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIBackpackHeight(), BufferedImage.TYPE_INT_ARGB);
         drawSlotUI(anvilBackpackImg);
         g.drawImage(anvilBackpackImg, ConfigUtil.INSTANCE.getAnvilAssetUIBackpackX(), ConfigUtil.INSTANCE.getAnvilAssetUIBackpackY(), null);
-        // 将技术图标绘制在技术操作按钮上
+        // 将技术图标绘制在技术操作按钮上 TODO 改为按钮形式，可操作targetNow，并且联动计算方法及tooltip
         AffineTransform iconTechTransform = new AffineTransform();
         // 32x32 to 16x16
         iconTechTransform.setToScale(0.5, 0.5);
