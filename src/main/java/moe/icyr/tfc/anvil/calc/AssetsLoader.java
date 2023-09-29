@@ -5,6 +5,7 @@ import moe.icyr.tfc.anvil.calc.exception.SkipNotUsingResourceLoaded;
 import moe.icyr.tfc.anvil.calc.resource.ResourceLocation;
 import moe.icyr.tfc.anvil.calc.resource.ResourceManager;
 import moe.icyr.tfc.anvil.calc.util.AssetsUtil;
+import moe.icyr.tfc.anvil.calc.util.ConfigUtil;
 import moe.icyr.tfc.anvil.calc.util.JarUtil;
 import moe.icyr.tfc.anvil.calc.util.MessageUtil;
 import org.tomlj.Toml;
@@ -27,12 +28,14 @@ import java.util.regex.Pattern;
 @Slf4j
 public class AssetsLoader {
 
-    private static final Pattern otherModsLoadPattern = Pattern.compile("^(?:assets/.*?/lang/.*|assets/tfc/textures/gui/anvil\\.png|assets/.*?/models/(?:item|block)/.*|assets/.*?/textures/(?:item|items|block|blocks)/.*|data/.*?/recipes/anvil/.*|data/.*?/tags/(?:blocks|items)/.*)$");
+    private static Pattern otherModsLoadPattern = null;
 
     /**
      * 加载mod文件内资源
      */
     public void loadMods(Consumer<String> progressFeedback) {
+        if (otherModsLoadPattern == null)
+            otherModsLoadPattern = Pattern.compile(ConfigUtil.INSTANCE.getLoadResourceRegex());
         // 散装Debug时为项目根路径，打包运行后为exe所在路径
         if (progressFeedback != null)
             progressFeedback.accept(MessageUtil.getMessage("ui.title.loading.resource", 0, 0, ""));
@@ -81,21 +84,6 @@ public class AssetsLoader {
                             ResourceManager.putModDisplayNameWithModId(modId, displayName);
                         }
                         loadMods(mod, name -> otherModsLoadPattern.matcher(name).matches(), progressFeedback);
-//                        if ("tfc".equals(modId)) {
-//                            // 群峦本体
-//                            loadMods(mod, name ->
-//                                    name.startsWith("assets/tfc/textures/gui/") ||
-//                                            name.startsWith("assets/tfc/lang/") ||
-//                                            name.startsWith("assets/tfc/textures/item/") ||
-//                                            name.startsWith("assets/tfc/textures/block/") ||
-//                                            name.startsWith("data/tfc/recipes/anvil/") ||
-//                                            name.startsWith("data/tfc/tags/") ||
-//                                            name.startsWith("data/forge/tags/"),
-//                                    progressFeedback);
-//                        } else {
-//                            // 其他mod
-//                            loadMods(mod, name -> otherModsLoadPattern.matcher(name).matches(), progressFeedback);
-//                        }
                     }
                 }
             }

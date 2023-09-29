@@ -9,6 +9,7 @@ import lombok.Data;
 @Data
 public class Config {
 
+    private String loadResourceRegex = "^(?:assets/.*?/lang/.*|assets/tfc/textures/gui/anvil\\.png|assets/.*?/models/(?:item|block)/.*|assets/.*?/textures/(?:item|items|block|blocks)/.*|data/.*?/recipes/anvil/.*|data/.*?/tags/(?:blocks|items)/.*)$";
     private String mapSeed = "";
     private Boolean isResetScreenLocation = false;
     private Integer screenX = 0;
