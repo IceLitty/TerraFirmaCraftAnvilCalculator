@@ -9,10 +9,12 @@
 ### 使用方法：
 
 首先解压软件包后应该是如下目录结构，其中exe为程序启动入口：<br>
-![appPackagedDir](https://github.com/IceLitty/TerraFirmaCraftAnvilCalculator/assets/6522057/2b542887-3ac9-4ad0-9e3d-0ef037da568a)
+![appPackagedDir](https://github.com/IceLitty/TerraFirmaCraftAnvilCalculator/assets/6522057/127eb6c6-4fe5-400f-b13d-368785c0000c)
+
 
 双击打开后会进行配置文件初始化，及提示缺失mod：<br>
-![needModTips](https://github.com/IceLitty/TerraFirmaCraftAnvilCalculator/assets/6522057/38955c61-7211-4cfd-ac3b-4a5702b582a7)
+![needModTips](https://github.com/IceLitty/TerraFirmaCraftAnvilCalculator/assets/6522057/2122bdef-c487-4a6d-b0c8-a2d7d6d1b76a)
+
 
 在程序位于根目录生成的mod文件夹中，放置你所下载的群峦传说1.18.2版本的modjar，以及minecraft1.18.2的客户端jar。<br>
 群峦传说下载地址：[curseForge](https://www.curseforge.com/minecraft/mc-mods/terrafirmacraft/files?version=1.18.2&gameVersionTypeId=1)<br>
@@ -25,12 +27,14 @@ minecraft客户端一般位于`%appdata%\.minecraft\versions\1.18.2\1.18.2.jar`<
 将其拷贝至`1.18.2.jar`中的`assets\minecraft\lang\zh_cn.json`。
 
 若缺失模组材质，或缺失模组显示命名的时候在选择合成配方时只会发生如下情况（无法显示材质/无法显示物品名称）仍然可以正常选择配方并计算：<br>
-![missingTextureOrDisplayName](https://github.com/IceLitty/TerraFirmaCraftAnvilCalculator/assets/6522057/cebd3afe-eaec-43c6-9074-d3c066c6b685)
+![missingTextureOrDisplayName](https://github.com/IceLitty/TerraFirmaCraftAnvilCalculator/assets/6522057/3e1c94bb-542a-4975-b273-bad04f7528cc)
+
 
 任意操作如选择配方、修改地图种子、修改当前值、修改目标值均会触发自动计算，只要目标值与配方都存在，计算就会进行。<br>
 
 程序具有配置文件：<br>
-![config](https://github.com/IceLitty/TerraFirmaCraftAnvilCalculator/assets/6522057/0a939f3a-3dc0-483a-a99f-9ef7c5d9dff1)
+![config](https://github.com/IceLitty/TerraFirmaCraftAnvilCalculator/assets/6522057/7c6ae47c-5afa-445d-b516-e364eb84b86e)
+
 
 ### 配置文件说明：
 
@@ -52,10 +56,10 @@ scaleUI | UI放大倍率，可通过该值控制UI的整体大小，建议使用
 截图 | 截图
 :---: | :---:
 主界面 | 资源文件加载进度提示
-![main](https://github.com/IceLitty/TerraFirmaCraftAnvilCalculator/assets/6522057/edf8b3fb-860a-4a51-a88c-af9aa5a8a281) | ![loading](https://github.com/IceLitty/TerraFirmaCraftAnvilCalculator/assets/6522057/9ff05ac6-0020-4d5a-b187-55f4dd90f0a7)
+![main](https://github.com/IceLitty/TerraFirmaCraftAnvilCalculator/assets/6522057/7c836070-5a8c-4a67-878e-1cecd498a95f) | ![loading](https://github.com/IceLitty/TerraFirmaCraftAnvilCalculator/assets/6522057/83a7fcc1-ae24-437d-95de-adeb38b04080)
 选择配方 | 根据已选输出/输入筛选可选配方
-![chooseRecipe](https://github.com/IceLitty/TerraFirmaCraftAnvilCalculator/assets/6522057/7054f0bb-9c94-48ee-b5dd-8a0dc6f2abce) | ![filterChoose](https://github.com/IceLitty/TerraFirmaCraftAnvilCalculator/assets/6522057/b58d122d-28ee-41df-a4da-e73e52ed0b5d)
-计算 | 自动计算 |
-![calculating](https://github.com/IceLitty/TerraFirmaCraftAnvilCalculator/assets/6522057/41dab091-a81d-4ab6-bb22-7daff0672de6) | ![actionModifyNowPostionAndAutoCalculating](https://github.com/IceLitty/TerraFirmaCraftAnvilCalculator/assets/6522057/5e0d0dba-2b80-4372-a2dc-b528cb956233)
+![chooseRecipe](https://github.com/IceLitty/TerraFirmaCraftAnvilCalculator/assets/6522057/fc0675e5-6799-4ebc-9da4-4d05416e9278) | ![filterChoose](https://github.com/IceLitty/TerraFirmaCraftAnvilCalculator/assets/6522057/0837b716-0d07-4d4c-85e3-92ae1ccef353)
+计算 | 自动计算
+![calculating](https://github.com/IceLitty/TerraFirmaCraftAnvilCalculator/assets/6522057/a01681ce-c690-4684-8939-ad8a3ff6b5b0) | ![actionModifyNowPostionAndAutoCalculating](https://github.com/IceLitty/TerraFirmaCraftAnvilCalculator/assets/6522057/d64463d3-e1ce-4cb8-bf4a-9bb5302eb7ec)
 自动本地化支持 | 
-![autoI18nSupport](https://github.com/IceLitty/TerraFirmaCraftAnvilCalculator/assets/6522057/b2f6e662-76ed-44c2-a837-a4f39330756e)
+![autoI18nSupport](https://github.com/IceLitty/TerraFirmaCraftAnvilCalculator/assets/6522057/37cfa76e-df7b-4980-b824-227c9f28b88d)
