@@ -101,7 +101,8 @@ public class MainFrame extends JFrame {
             jTextArea.setFocusable(false);
             jTextArea.setFont(UIManager.getFont("Label.font"));
             this.add(jTextArea);
-            this.setTitle(MessageUtil.getMessage("ui.title.no.tfc.anvil.assets"));
+            this.revalidate();
+            this.repaint();
             return;
         }
         BufferedImage anvil = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIX(), ConfigUtil.INSTANCE.getAnvilAssetUIY(),
