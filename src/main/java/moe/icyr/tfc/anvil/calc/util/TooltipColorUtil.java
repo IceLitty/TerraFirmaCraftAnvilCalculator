@@ -63,7 +63,7 @@ public class TooltipColorUtil {
             if (text == null || text.isEmpty()) {
                 return this;
             }
-            if (text.contains("\n")) {
+            if (text.contains("\n") && !"\n".equals(text)) {
                 String[] split = text.split("\n");
                 for (int i = 0; i < split.length; i++) {
                     String s = split[i];
@@ -76,6 +76,19 @@ public class TooltipColorUtil {
                 }
             } else {
                 this.color.add(new TooltipColor(text, color, bold, italic));
+            }
+            return this;
+        }
+        public TooltipColorUtil.Builder withText(TooltipColor t) {
+            if (t == null)
+                return this;
+            return this.withText(t.getText(), t.getColor(), t.getBold(), t.getItalic());
+        }
+        public TooltipColorUtil.Builder withText(List<TooltipColor> textAndColor) {
+            if (textAndColor == null || textAndColor.isEmpty())
+                return this;
+            for (TooltipColor t : textAndColor) {
+                this.withText(t.getText(), t.getColor(), t.getBold(), t.getItalic());
             }
             return this;
         }

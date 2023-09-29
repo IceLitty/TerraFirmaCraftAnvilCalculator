@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import moe.icyr.tfc.anvil.calc.exception.SkipNotUsingResourceLoaded;
 import moe.icyr.tfc.anvil.calc.resource.*;
 
 import javax.imageio.ImageIO;
@@ -16,6 +17,7 @@ import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -30,9 +32,10 @@ public class AssetsUtil {
     private static final Pattern pathPattern = Pattern.compile("^(.+)\\..+$");
     private static final Map<Class<? extends ResourceLocation>, Pattern> resourcePathPattern = new HashMap<>() {{
         put(Texture.class, Pattern.compile("^assets/.*?/textures/.*$"));
-        put(RecipeAnvil.class, Pattern.compile("^data/.*?/recipes/.*$"));
+        put(RecipeAnvil.class, Pattern.compile("^data/.*?/recipes/anvil/.*$"));
         put(Tag.class, Pattern.compile("^data/.*?/tags/.*$"));
         put(Lang.class, Pattern.compile("^assets/.*?/lang/.*$"));
+        put(Model.class, Pattern.compile("^assets/.*?/models/.*$"));
     }};
 
     /**
@@ -82,6 +85,7 @@ public class AssetsUtil {
         // 解析文件路径前缀
         String namespace;
         String minecraftResourceType;
+        // at /
         if (resourcePath.startsWith("data")) {
             // 资源包
             resourcePath = resourcePath.substring(5);
@@ -95,29 +99,26 @@ public class AssetsUtil {
         if (firstPathSeparator == -1) {
             throw new IllegalArgumentException(MessageUtil.getMessage("log.load.resource.path.cant.resolve.namespace",resourcePath));
         }
+        // at /(assets|data)/
         namespace = resourcePath.substring(0, firstPathSeparator);
         resourcePath = resourcePath.substring(firstPathSeparator + 1);
         firstPathSeparator = resourcePath.indexOf("/");
         if (firstPathSeparator == -1) {
             throw new IllegalArgumentException(MessageUtil.getMessage("log.load.resource.path.cant.resolve.type", resourcePath));
         }
+        // at /(assets|data)/[namespace]/
         minecraftResourceType = resourcePath.substring(0, firstPathSeparator);
         resourcePath = resourcePath.substring(firstPathSeparator + 1);
         String thirdType = null;
-        if ("textures".equals(minecraftResourceType)) {
+        if ("textures".equals(minecraftResourceType) || "tags".equals(minecraftResourceType) || "models".equals(minecraftResourceType)) {
             firstPathSeparator = resourcePath.indexOf("/");
             if (firstPathSeparator == -1) {
                 throw new IllegalArgumentException(MessageUtil.getMessage("log.load.resource.path.cant.resolve.subtype", resourcePath));
             }
-            // block colormap entity gui item misc mob_effect models painting particle etc.
-            thirdType = resourcePath.substring(0, firstPathSeparator);
-            resourcePath = resourcePath.substring(firstPathSeparator + 1);
-        } else if ("tags".equals(minecraftResourceType)) {
-            firstPathSeparator = resourcePath.indexOf("/");
-            if (firstPathSeparator == -1) {
-                throw new IllegalArgumentException(MessageUtil.getMessage("log.load.resource.path.cant.resolve.subtype", resourcePath));
-            }
-            // blocks entity_types fluids items worldgen etc.
+            // at /(assets|data)/[namespace]/(textures|recipes|tags|models)/
+            // textures -> block blocks colormap entity gui item items misc mob_effect models painting particle etc.
+            // tags     -> blocks entity_types fluids items worldgen etc.
+            // models   -> block item
             thirdType = resourcePath.substring(0, firstPathSeparator);
             resourcePath = resourcePath.substring(firstPathSeparator + 1);
         }
@@ -143,6 +144,11 @@ public class AssetsUtil {
                 if (resourceType != Lang.class)
                     throw new IllegalArgumentException(MessageUtil.getMessage("log.load.resource.path.mismatch.internal.type",
                             minecraftResourceType, Lang.class.getSimpleName()));
+            }
+            case "models" -> {
+                if (resourceType != Model.class)
+                    throw new IllegalArgumentException(MessageUtil.getMessage("log.load.resource.path.mismatch.internal.type",
+                            minecraftResourceType, Model.class.getSimpleName()));
             }
         }
         // 去除文件名后缀
@@ -195,38 +201,70 @@ public class AssetsUtil {
                 throw new IllegalArgumentException(MessageUtil.getMessage("log.load.resource.reflect.error"), e);
             }
         } else if (resourceType == Lang.class) {
+            if (!"en_us".equalsIgnoreCase(resourcePath) && !(Locale.getDefault().getLanguage() + "_" + Locale.getDefault().getCountry()).equalsIgnoreCase(resourcePath))
+                throw new SkipNotUsingResourceLoaded(MessageUtil.getMessage("log.load.lang.pass.not.local", resourcePath, Locale.getDefault().getLanguage() + "_" + Locale.getDefault().getCountry()));
+            String s = new String(resourceData, StandardCharsets.UTF_8);
+            Lang.LangSets langSets = new Lang.LangSets();
+            langSets.setOriginalPath(originalPath);
+            langSets.setNamespace(namespace);
+            langSets.setPath(resourcePath);
+            String langId = resourcePath;
+            List<Lang> storage = langSets.getStorage();
+            Map<String, String> langMap;
+            if (originalPath.endsWith(".json")) {
+                try {
+                    langMap = JsonUtil.INSTANCE.readValue(s, new TypeReference<>() {
+                    });
+                } catch (JsonProcessingException e) {
+                    throw new IllegalArgumentException(MessageUtil.getMessage("log.load.resource.lang.json.process.error", namespace + ":" + resourcePath), e);
+                }
+            } else if (originalPath.endsWith(".lang")) {
+                langMap = new HashMap<>();
+                String[] split = s.replace("\r", "").split("\n");
+                for (String ss : split) {
+                    if (ss == null || ss.trim().isEmpty())
+                        continue;
+                    if (!ss.contains("=") || ss.startsWith("#"))
+                        continue;
+                    String key = ss.substring(0, ss.indexOf("=")).trim();
+                    String value = ss.substring(ss.indexOf("=") + 1).trim();
+                    if (key.isEmpty() || value.isEmpty())
+                        continue;
+                    langMap.put(key, value);
+                }
+            } else {
+                throw new IllegalArgumentException(MessageUtil.getMessage("log.load.resource.lang.file.type.not.support", originalPath));
+            }
+            langMap.forEach((k, v) -> {
+                boolean found = false;
+                for (Lang stor : storage) {
+                    if (k.equals(stor.getFullKey())) {
+                        stor.getLangValues().put(langId, v);
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    Lang lang = Lang.parseLang(k, langId, v);
+                    if (lang != null) {
+                        lang.setNamespace(langSets.getNamespace());
+                        lang.setPath(k);
+                        storage.add(lang);
+                    }
+                }
+            });
+            //noinspection unchecked
+            return (T) langSets;
+        } else if (resourceType == Model.class) {
             try {
                 String s = new String(resourceData, StandardCharsets.UTF_8);
-                Lang.LangSets langSets = new Lang.LangSets();
-                langSets.setOriginalPath(originalPath);
-                langSets.setNamespace(namespace);
-                langSets.setPath(resourcePath);
-                String langId = resourcePath;
-                List<Lang> storage = langSets.getStorage();
-                Map<String, String> langMap = JsonUtil.INSTANCE.readValue(s, new TypeReference<>() {
-                });
-                langMap.forEach((k, v) -> {
-                    boolean found = false;
-                    for (Lang stor : storage) {
-                        if (k.equals(stor.getFullKey())) {
-                            stor.getLangValues().put(langId, v);
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
-                        Lang lang = Lang.parseLang(k, langId, v);
-                        if (lang != null) {
-                            lang.setNamespace(langSets.getNamespace());
-                            lang.setPath(k);
-                            storage.add(lang);
-                        }
-                    }
-                });
-                //noinspection unchecked
-                return (T) langSets;
+                T model = JsonUtil.INSTANCE.readValue(s, resourceType);
+                model.setOriginalPath(originalPath);
+                model.setNamespace(namespace);
+                model.setPath(resourcePath);
+                return model;
             } catch (JsonProcessingException e) {
-                throw new IllegalArgumentException(MessageUtil.getMessage("log.load.resource.lang.json.process.error", namespace + ":" + resourcePath), e);
+                throw new IllegalArgumentException(MessageUtil.getMessage("log.load.resource.model.json.process.error", namespace + ":" + resourcePath), e);
             }
         } else {
             throw new UnsupportedOperationException(MessageUtil.getMessage("log.load.resource.unsupported.asset.type", resourceType.getName()));

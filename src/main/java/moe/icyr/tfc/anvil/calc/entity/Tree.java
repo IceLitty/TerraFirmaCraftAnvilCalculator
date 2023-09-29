@@ -31,7 +31,11 @@ public class Tree {
 
     public @NonNull List<Tree> getEndLeaf() {
         List<Tree> endLeafs = new ArrayList<>();
-        collectEndLeaf(this, endLeafs);
+        if (this.getChildren().isEmpty()) {
+            endLeafs.add(this);
+        } else {
+            collectEndLeaf(this, endLeafs);
+        }
         return endLeafs;
     }
 
@@ -75,7 +79,7 @@ public class Tree {
             do {
                 builder.insert(0, leafNode.getChildren().isEmpty() ? leafNode.getFunc() : leafNode.getFunc() + " -> ");
                 leafNode = leafNode.getParent();
-            } while (leafNode.getParent() != null);
+            } while (leafNode != null && leafNode.getParent() != null);
             strBuilder.append(builder).append("\n");
         }
         return strBuilder.append("}").toString();

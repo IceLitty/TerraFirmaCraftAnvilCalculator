@@ -1,5 +1,6 @@
 package moe.icyr.tfc.anvil.calc.ui;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import moe.icyr.tfc.anvil.calc.AssetsLoader;
 import moe.icyr.tfc.anvil.calc.entity.AnvilFuncStep;
@@ -47,7 +48,19 @@ public class MainFrame extends JFrame {
     private ImageJButton ruleRight;
     private ImageJButton targetIcon;
     private ImageJButton targetNowIcon;
+    private ImageJButton funcPunchButton;
+    private ImageJButton funcBendButton;
+    private ImageJButton funcUpsetButton;
+    private ImageJButton funcShrinkButton;
+    private ImageJButton funcHitLightButton;
+    private ImageJButton funcHitMediumButton;
+    private ImageJButton funcHitHeavyButton;
+    private ImageJButton funcDrawButton;
 
+    /**
+     * 程序主面板
+     * 若不考虑rules，则计算逻辑具有边际问题，如0-145的范围中，会产生执行操作数后小于0或大于145的情况，但由于有rules限制最后几位操作数，故而导致不可能在极大的目标值时指定减小操作，或极小目标值指定增大操作，一定程度上避免了边际问题
+     */
     public MainFrame() throws HeadlessException {
         this.mainFrame = this;
         // 加载配置文件
@@ -55,18 +68,16 @@ public class MainFrame extends JFrame {
         // 初始化UI
         this.setSize(ConfigUtil.INSTANCE.getAnvilAssetUIWidth() * ConfigUtil.INSTANCE.getScaleUI() + ConfigUtil.INSTANCE.getMainFrameWidthOffset(),
                 ConfigUtil.INSTANCE.getAnvilAssetUIHeight() * ConfigUtil.INSTANCE.getScaleUI() + ConfigUtil.INSTANCE.getMainFrameHeightOffset());
-//        this.setResizable(false); // TODO debug
+        this.setResizable(false);
         this.setLocationRelativeTo(null); // 屏幕居中
         this.setVisible(true);
         this.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         AssetsLoader assetsLoader = new AssetsLoader();
         // 加载MOD资源包材质包
-        // TODO 尝试优化加载的资源项，尽量缩短加载时间
         assetsLoader.loadMods(this::setTitle);
         // 动态处理素材-加载窗体UI
         this.setTitle(MessageUtil.getMessage("ui.title.loading.ui", 2, 2));
         this.loadAnvilUI(this::setTitle);
-        // TODO 支持跳过配方选择，直接输入target值和rules进行计算
         // 设置全局Tooltip响应时间
         ToolTipManager.sharedInstance().setInitialDelay(0);
         ToolTipManager.sharedInstance().setDismissDelay(10000);
@@ -90,6 +101,7 @@ public class MainFrame extends JFrame {
             jTextArea.setFocusable(false);
             jTextArea.setFont(UIManager.getFont("Label.font"));
             this.add(jTextArea);
+            this.setTitle(MessageUtil.getMessage("ui.label.no.tfc.jar"));
             return;
         }
         BufferedImage anvil = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIX(), ConfigUtil.INSTANCE.getAnvilAssetUIY(),
@@ -99,55 +111,106 @@ public class MainFrame extends JFrame {
         BufferedImage anvilBackpackImg = new BufferedImage(ConfigUtil.INSTANCE.getAnvilAssetUIBackpackWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIBackpackHeight(), BufferedImage.TYPE_INT_ARGB);
         drawSlotUI(anvilBackpackImg);
         g.drawImage(anvilBackpackImg, ConfigUtil.INSTANCE.getAnvilAssetUIBackpackX(), ConfigUtil.INSTANCE.getAnvilAssetUIBackpackY(), null);
-        // 将技术图标绘制在技术操作按钮上 TODO 改为按钮形式，可操作targetNow，并且联动计算方法及tooltip
-        AffineTransform iconTechTransform = new AffineTransform();
-        // 32x32 to 16x16
-        iconTechTransform.setToScale(0.5, 0.5);
-        AffineTransformOp iconTechTransformOp = new AffineTransformOp(iconTechTransform, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
-        BufferedImage _iconPunch = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIPunchX(), ConfigUtil.INSTANCE.getAnvilAssetUIPunchY(),
-                ConfigUtil.INSTANCE.getAnvilAssetUIPunchWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIPunchHeight());
-        BufferedImage iconPunch = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
-        iconPunch = iconTechTransformOp.filter(_iconPunch, iconPunch);
-        g.drawImage(iconPunch, ConfigUtil.INSTANCE.getAnvilAssetUITechPunchX(), ConfigUtil.INSTANCE.getAnvilAssetUITechPunchY(), iconPunch.getWidth(), iconPunch.getHeight(), null);
-        BufferedImage _iconBend = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIBendX(), ConfigUtil.INSTANCE.getAnvilAssetUIBendY(),
-                ConfigUtil.INSTANCE.getAnvilAssetUIBendWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIBendHeight());
-        BufferedImage iconBend = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
-        iconBend = iconTechTransformOp.filter(_iconBend, iconBend);
-        g.drawImage(iconBend, ConfigUtil.INSTANCE.getAnvilAssetUITechBendX(), ConfigUtil.INSTANCE.getAnvilAssetUITechBendY(), iconBend.getWidth(), iconBend.getHeight(), null);
-        BufferedImage _iconUpset = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIUpsetX(), ConfigUtil.INSTANCE.getAnvilAssetUIUpsetY(),
-                ConfigUtil.INSTANCE.getAnvilAssetUIUpsetWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIUpsetHeight());
-        BufferedImage iconUpset = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
-        iconUpset = iconTechTransformOp.filter(_iconUpset, iconUpset);
-        g.drawImage(iconUpset, ConfigUtil.INSTANCE.getAnvilAssetUITechUpsetX(), ConfigUtil.INSTANCE.getAnvilAssetUITechUpsetY(), iconUpset.getWidth(), iconUpset.getHeight(), null);
-        BufferedImage _iconShrink = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIShrinkX(), ConfigUtil.INSTANCE.getAnvilAssetUIShrinkY(),
-                ConfigUtil.INSTANCE.getAnvilAssetUIShrinkWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIShrinkHeight());
-        BufferedImage iconShrink = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
-        iconShrink = iconTechTransformOp.filter(_iconShrink, iconShrink);
-        g.drawImage(iconShrink, ConfigUtil.INSTANCE.getAnvilAssetUITechShrinkX(), ConfigUtil.INSTANCE.getAnvilAssetUITechShrinkY(), iconShrink.getWidth(), iconShrink.getHeight(), null);
-        BufferedImage _iconHitLight = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIHitLightX(), ConfigUtil.INSTANCE.getAnvilAssetUIHitLightY(),
-                ConfigUtil.INSTANCE.getAnvilAssetUIHitLightWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIHitLightHeight());
-        BufferedImage iconHitLight = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
-        iconHitLight = iconTechTransformOp.filter(_iconHitLight, iconHitLight);
-        g.drawImage(iconHitLight, ConfigUtil.INSTANCE.getAnvilAssetUITechHitLightX(), ConfigUtil.INSTANCE.getAnvilAssetUITechHitLightY(), iconHitLight.getWidth(), iconHitLight.getHeight(), null);
-        BufferedImage _iconHitMedium = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIHitMediumX(), ConfigUtil.INSTANCE.getAnvilAssetUIHitMediumY(),
-                ConfigUtil.INSTANCE.getAnvilAssetUIHitMediumWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIHitMediumHeight());
-        BufferedImage iconHitMedium = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
-        iconHitMedium = iconTechTransformOp.filter(_iconHitMedium, iconHitMedium);
-        g.drawImage(iconHitMedium, ConfigUtil.INSTANCE.getAnvilAssetUITechHitMediumX(), ConfigUtil.INSTANCE.getAnvilAssetUITechHitMediumY(), iconHitMedium.getWidth(), iconHitMedium.getHeight(), null);
-        BufferedImage _iconHitHeavy = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIHitHeavyX(), ConfigUtil.INSTANCE.getAnvilAssetUIHitHeavyY(),
-                ConfigUtil.INSTANCE.getAnvilAssetUIHitHeavyWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIHitHeavyHeight());
-        BufferedImage iconHitHeavy = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
-        iconHitHeavy = iconTechTransformOp.filter(_iconHitHeavy, iconHitHeavy);
-        g.drawImage(iconHitHeavy, ConfigUtil.INSTANCE.getAnvilAssetUITechHitHeavyX(), ConfigUtil.INSTANCE.getAnvilAssetUITechHitHeavyY(), iconHitHeavy.getWidth(), iconHitHeavy.getHeight(), null);
-        BufferedImage _iconDraw = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIDrawX(), ConfigUtil.INSTANCE.getAnvilAssetUIDrawY(),
-                ConfigUtil.INSTANCE.getAnvilAssetUIDrawWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIDrawHeight());
-        BufferedImage iconDraw = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
-        iconDraw = iconTechTransformOp.filter(_iconDraw, iconDraw);
-        g.drawImage(iconDraw, ConfigUtil.INSTANCE.getAnvilAssetUITechDrawX(), ConfigUtil.INSTANCE.getAnvilAssetUITechDrawY(), iconDraw.getWidth(), iconDraw.getHeight(), null);
         // 放大并加载到背景UI
         g.dispose();
         anvil = scaleGlobally(anvil);
         this.setContentPane(new ImageJPanel(anvil));
+        // 绘制技术图标按钮 32x32 to 16x16 * UIScale
+        AffineTransform iconTechTransform = new AffineTransform();
+        double funcScaleWidth = ((double) ConfigUtil.INSTANCE.getAnvilAssetUITechWidth()) / ConfigUtil.INSTANCE.getAnvilAssetUIDrawWidth() * ConfigUtil.INSTANCE.getScaleUI();
+        double funcScaleHeight = ((double) ConfigUtil.INSTANCE.getAnvilAssetUITechHeight()) / ConfigUtil.INSTANCE.getAnvilAssetUIDrawHeight() * ConfigUtil.INSTANCE.getScaleUI();
+        int funcWidth = (int) funcScaleWidth * ConfigUtil.INSTANCE.getAnvilAssetUIDrawWidth();
+        int funcHeight = (int) funcScaleHeight * ConfigUtil.INSTANCE.getAnvilAssetUIDrawHeight();
+        iconTechTransform.setToScale(funcScaleWidth, funcScaleHeight);
+        AffineTransformOp iconTechTransformOp = new AffineTransformOp(iconTechTransform, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
+        BufferedImage _iconPunch = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIPunchX(), ConfigUtil.INSTANCE.getAnvilAssetUIPunchY(),
+                ConfigUtil.INSTANCE.getAnvilAssetUIPunchWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIPunchHeight());
+        BufferedImage iconPunch = new BufferedImage(funcWidth, funcHeight, BufferedImage.TYPE_INT_ARGB);
+        iconPunch = iconTechTransformOp.filter(_iconPunch, iconPunch);
+        this.funcPunchButton = new ImageJButton(new ImageIcon(iconPunch));
+        funcPunchButton.setLocation(ConfigUtil.INSTANCE.getAnvilAssetUITechPunchX() * ConfigUtil.INSTANCE.getScaleUI(),
+                ConfigUtil.INSTANCE.getAnvilAssetUITechPunchY() * ConfigUtil.INSTANCE.getScaleUI());
+        funcPunchButton.setSize(new Dimension(iconPunch.getWidth(), iconPunch.getHeight()));
+        funcPunchButton.setColorTooltips(getRuleTooltip(AnvilFuncStep.PUNCH.getId()));
+        funcPunchButton.addActionListener(new FuncAction(AnvilFuncStep.PUNCH, progressFeedback));
+        this.add(funcPunchButton);
+        BufferedImage _iconBend = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIBendX(), ConfigUtil.INSTANCE.getAnvilAssetUIBendY(),
+                ConfigUtil.INSTANCE.getAnvilAssetUIBendWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIBendHeight());
+        BufferedImage iconBend = new BufferedImage(funcWidth, funcHeight, BufferedImage.TYPE_INT_ARGB);
+        iconBend = iconTechTransformOp.filter(_iconBend, iconBend);
+        this.funcBendButton = new ImageJButton(new ImageIcon(iconBend));
+        funcBendButton.setLocation(ConfigUtil.INSTANCE.getAnvilAssetUITechBendX() * ConfigUtil.INSTANCE.getScaleUI(),
+                ConfigUtil.INSTANCE.getAnvilAssetUITechBendY() * ConfigUtil.INSTANCE.getScaleUI());
+        funcBendButton.setSize(new Dimension(iconBend.getWidth(), iconBend.getHeight()));
+        funcBendButton.setColorTooltips(getRuleTooltip(AnvilFuncStep.BEND.getId()));
+        funcBendButton.addActionListener(new FuncAction(AnvilFuncStep.BEND, progressFeedback));
+        this.add(funcBendButton);
+        BufferedImage _iconUpset = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIUpsetX(), ConfigUtil.INSTANCE.getAnvilAssetUIUpsetY(),
+                ConfigUtil.INSTANCE.getAnvilAssetUIUpsetWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIUpsetHeight());
+        BufferedImage iconUpset = new BufferedImage(funcWidth, funcHeight, BufferedImage.TYPE_INT_ARGB);
+        iconUpset = iconTechTransformOp.filter(_iconUpset, iconUpset);
+        this.funcUpsetButton = new ImageJButton(new ImageIcon(iconUpset));
+        funcUpsetButton.setLocation(ConfigUtil.INSTANCE.getAnvilAssetUITechUpsetX() * ConfigUtil.INSTANCE.getScaleUI(),
+                ConfigUtil.INSTANCE.getAnvilAssetUITechUpsetY() * ConfigUtil.INSTANCE.getScaleUI());
+        funcUpsetButton.setSize(new Dimension(iconUpset.getWidth(), iconUpset.getHeight()));
+        funcUpsetButton.setColorTooltips(getRuleTooltip(AnvilFuncStep.UPSET.getId()));
+        funcUpsetButton.addActionListener(new FuncAction(AnvilFuncStep.UPSET, progressFeedback));
+        this.add(funcUpsetButton);
+        BufferedImage _iconShrink = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIShrinkX(), ConfigUtil.INSTANCE.getAnvilAssetUIShrinkY(),
+                ConfigUtil.INSTANCE.getAnvilAssetUIShrinkWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIShrinkHeight());
+        BufferedImage iconShrink = new BufferedImage(funcWidth, funcHeight, BufferedImage.TYPE_INT_ARGB);
+        iconShrink = iconTechTransformOp.filter(_iconShrink, iconShrink);
+        this.funcShrinkButton = new ImageJButton(new ImageIcon(iconShrink));
+        funcShrinkButton.setLocation(ConfigUtil.INSTANCE.getAnvilAssetUITechShrinkX() * ConfigUtil.INSTANCE.getScaleUI(),
+                ConfigUtil.INSTANCE.getAnvilAssetUITechShrinkY() * ConfigUtil.INSTANCE.getScaleUI());
+        funcShrinkButton.setSize(new Dimension(iconShrink.getWidth(), iconShrink.getHeight()));
+        funcShrinkButton.setColorTooltips(getRuleTooltip(AnvilFuncStep.SHRINK.getId()));
+        funcShrinkButton.addActionListener(new FuncAction(AnvilFuncStep.SHRINK, progressFeedback));
+        this.add(funcShrinkButton);
+        BufferedImage _iconHitLight = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIHitLightX(), ConfigUtil.INSTANCE.getAnvilAssetUIHitLightY(),
+                ConfigUtil.INSTANCE.getAnvilAssetUIHitLightWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIHitLightHeight());
+        BufferedImage iconHitLight = new BufferedImage(funcWidth, funcHeight, BufferedImage.TYPE_INT_ARGB);
+        iconHitLight = iconTechTransformOp.filter(_iconHitLight, iconHitLight);
+        this.funcHitLightButton = new ImageJButton(new ImageIcon(iconHitLight));
+        funcHitLightButton.setLocation(ConfigUtil.INSTANCE.getAnvilAssetUITechHitLightX() * ConfigUtil.INSTANCE.getScaleUI(),
+                ConfigUtil.INSTANCE.getAnvilAssetUITechHitLightY() * ConfigUtil.INSTANCE.getScaleUI());
+        funcHitLightButton.setSize(new Dimension(iconHitLight.getWidth(), iconHitLight.getHeight()));
+        funcHitLightButton.setColorTooltips(getRuleTooltip(AnvilFuncStep.HIT_LIGHT.getId()));
+        funcHitLightButton.addActionListener(new FuncAction(AnvilFuncStep.HIT_LIGHT, progressFeedback));
+        this.add(funcHitLightButton);
+        BufferedImage _iconHitMedium = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIHitMediumX(), ConfigUtil.INSTANCE.getAnvilAssetUIHitMediumY(),
+                ConfigUtil.INSTANCE.getAnvilAssetUIHitMediumWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIHitMediumHeight());
+        BufferedImage iconHitMedium = new BufferedImage(funcWidth, funcHeight, BufferedImage.TYPE_INT_ARGB);
+        iconHitMedium = iconTechTransformOp.filter(_iconHitMedium, iconHitMedium);
+        this.funcHitMediumButton = new ImageJButton(new ImageIcon(iconHitMedium));
+        funcHitMediumButton.setLocation(ConfigUtil.INSTANCE.getAnvilAssetUITechHitMediumX() * ConfigUtil.INSTANCE.getScaleUI(),
+                ConfigUtil.INSTANCE.getAnvilAssetUITechHitMediumY() * ConfigUtil.INSTANCE.getScaleUI());
+        funcHitMediumButton.setSize(new Dimension(iconHitMedium.getWidth(), iconHitMedium.getHeight()));
+        funcHitMediumButton.setColorTooltips(getRuleTooltip(AnvilFuncStep.HIT_MEDIUM.getId()));
+        funcHitMediumButton.addActionListener(new FuncAction(AnvilFuncStep.HIT_MEDIUM, progressFeedback));
+        this.add(funcHitMediumButton);
+        BufferedImage _iconHitHeavy = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIHitHeavyX(), ConfigUtil.INSTANCE.getAnvilAssetUIHitHeavyY(),
+                ConfigUtil.INSTANCE.getAnvilAssetUIHitHeavyWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIHitHeavyHeight());
+        BufferedImage iconHitHeavy = new BufferedImage(funcWidth, funcHeight, BufferedImage.TYPE_INT_ARGB);
+        iconHitHeavy = iconTechTransformOp.filter(_iconHitHeavy, iconHitHeavy);
+        this.funcHitHeavyButton = new ImageJButton(new ImageIcon(iconHitHeavy));
+        funcHitHeavyButton.setLocation(ConfigUtil.INSTANCE.getAnvilAssetUITechHitHeavyX() * ConfigUtil.INSTANCE.getScaleUI(),
+                ConfigUtil.INSTANCE.getAnvilAssetUITechHitHeavyY() * ConfigUtil.INSTANCE.getScaleUI());
+        funcHitHeavyButton.setSize(new Dimension(iconHitHeavy.getWidth(), iconHitHeavy.getHeight()));
+        funcHitHeavyButton.setColorTooltips(getRuleTooltip(AnvilFuncStep.HIT_HARD.getId()));
+        funcHitHeavyButton.addActionListener(new FuncAction(AnvilFuncStep.HIT_HARD, progressFeedback));
+        this.add(funcHitHeavyButton);
+        BufferedImage _iconDraw = asset.getSubimage(ConfigUtil.INSTANCE.getAnvilAssetUIDrawX(), ConfigUtil.INSTANCE.getAnvilAssetUIDrawY(),
+                ConfigUtil.INSTANCE.getAnvilAssetUIDrawWidth(), ConfigUtil.INSTANCE.getAnvilAssetUIDrawHeight());
+        BufferedImage iconDraw = new BufferedImage(funcWidth, funcHeight, BufferedImage.TYPE_INT_ARGB);
+        iconDraw = iconTechTransformOp.filter(_iconDraw, iconDraw);
+        this.funcDrawButton = new ImageJButton(new ImageIcon(iconDraw));
+        funcDrawButton.setLocation(ConfigUtil.INSTANCE.getAnvilAssetUITechDrawX() * ConfigUtil.INSTANCE.getScaleUI(),
+                ConfigUtil.INSTANCE.getAnvilAssetUITechDrawY() * ConfigUtil.INSTANCE.getScaleUI());
+        funcDrawButton.setSize(new Dimension(iconDraw.getWidth(), iconDraw.getHeight()));
+        funcDrawButton.setColorTooltips(getRuleTooltip(AnvilFuncStep.DRAW.getId()));
+        funcDrawButton.addActionListener(new FuncAction(AnvilFuncStep.DRAW, progressFeedback));
+        this.add(funcDrawButton);
         // 按钮引用
         this.buttonMainMaterial = new ImageJButton();
         this.buttonOffMaterial = new ImageJButton();
@@ -552,6 +615,14 @@ public class MainFrame extends JFrame {
                 this.ruleRight.setVisible(true);
                 this.targetIcon.setVisible(true);
                 this.targetNowIcon.setVisible(true);
+                this.funcPunchButton.setVisible(true);
+                this.funcDrawButton.setVisible(true);
+                this.funcHitHeavyButton.setVisible(true);
+                this.funcHitMediumButton.setVisible(true);
+                this.funcHitLightButton.setVisible(true);
+                this.funcShrinkButton.setVisible(true);
+                this.funcUpsetButton.setVisible(true);
+                this.funcBendButton.setVisible(true);
                 this.mainFrame.revalidate();
                 this.mainFrame.repaint();
             });
@@ -586,20 +657,35 @@ public class MainFrame extends JFrame {
             }
             String itemNamespace = itemId.split(":")[0];
             String itemName = getItemDisplayName(itemId, null, recipe.toResourceLocationStr());
-            String fullRecipeDesc = "";
+            final StringBuilder fullRecipeDescStringBuilder = new StringBuilder();
+            List<TooltipColorUtil.TooltipColor> fullRecipeDesc;
+            TooltipColorUtil.Builder fullRecipeDescBuilder = new TooltipColorUtil.Builder();
             String resultItemName = getItemDisplayName(recipe.getResult().gotItemId(), null, recipe.toResourceLocationStr());
             String inputMainItemName = getItemDisplayName(recipe.getInput().getItem(), recipe.getInput().getTag(), recipe.toResourceLocationStr());
             String inputOffItemName = "";
+            boolean canShowRecipeInTooltip = !inputMainItemName.isBlank() || !inputOffItemName.isBlank() || !resultItemName.isBlank();
+            if (canShowRecipeInTooltip) {
+                fullRecipeDescBuilder.withNewLine();
+            }
             if (!inputMainItemName.isBlank()) {
-                fullRecipeDesc += inputMainItemName;
+                fullRecipeDescStringBuilder.append(inputMainItemName);
+                fullRecipeDescBuilder.withText(inputMainItemName, sourceButton == this.buttonScroll ? ColorPresent.getTooltipItemName() : ColorPresent.getTooltipItemDesc());
             }
             if (!inputOffItemName.isBlank()) {
-                fullRecipeDesc += " + " + inputOffItemName;
+                fullRecipeDescStringBuilder.append(" + ").append(inputOffItemName);
+                fullRecipeDescBuilder.withText(" + ", ColorPresent.getTooltipItemDesc())
+                        .withText(inputOffItemName, sourceButton == this.buttonScroll ? ColorPresent.getTooltipItemName() : ColorPresent.getTooltipItemDesc());
             }
             if (!resultItemName.isBlank()) {
-                fullRecipeDesc += " -> " + resultItemName;
+                fullRecipeDescStringBuilder.append(" -> ").append(resultItemName);
+                fullRecipeDescBuilder.withText(" -> ", ColorPresent.getTooltipItemDesc())
+                        .withText(resultItemName, sourceButton == this.buttonScroll ? ColorPresent.getTooltipItemDesc() : ColorPresent.getTooltipItemName());
             }
-            final String finalFullRecipeDesc = fullRecipeDesc;
+            if (canShowRecipeInTooltip) {
+                fullRecipeDesc = fullRecipeDescBuilder.build();
+            } else {
+                fullRecipeDesc = null;
+            }
             // 获取材质写入缓存
             RecipeAnvil.Textureable textureable;
             if (sourceButton == this.buttonScroll) {
@@ -639,7 +725,7 @@ public class MainFrame extends JFrame {
                     .withText(itemName, ColorPresent.getTooltipItemName())
                     .withNewLine().withText(itemId, ColorPresent.getTooltipItemDesc())
                     .withNewLine().withText(MessageUtil.getMessage("ui.tooltip.mod.is"), ColorPresent.getTooltipItemDesc()).withText(ResourceManager.getModDisplayNameByModId(itemNamespace), ColorPresent.getTooltipModId(), false, true)
-                    .withText(fullRecipeDesc.isBlank() ? null : "\n" + fullRecipeDesc, ColorPresent.getTooltipItemDesc())
+                    .withText(fullRecipeDesc)
                     .withNewLine().withText(MessageUtil.getMessage("ui.tooltip.recipe.from") + recipe.toResourceLocationStr(), ColorPresent.getTooltipItemDesc())
                     .withText(textureCantFindReason == null ? null : "\n" + textureCantFindReason, Color.RED)
                     .build());
@@ -670,7 +756,7 @@ public class MainFrame extends JFrame {
                         .withText(resultItemName, ColorPresent.getTooltipItemName())
                         .withNewLine().withText(resultItemId, ColorPresent.getTooltipItemDesc())
                         .withNewLine().withText(MessageUtil.getMessage("ui.tooltip.mod.is"), ColorPresent.getTooltipItemDesc()).withText(ResourceManager.getModDisplayNameByModId(resultItemId.split(":")[0]), ColorPresent.getTooltipModId(), false, true)
-                        .withText(finalFullRecipeDesc.isBlank() ? null : "\n" + finalFullRecipeDesc, ColorPresent.getTooltipItemDesc())
+                        .withText(fullRecipeDescStringBuilder.isEmpty() ? null : "\n" + fullRecipeDescStringBuilder.toString(), ColorPresent.getTooltipItemDesc())
                         .withNewLine().withText(MessageUtil.getMessage("ui.tooltip.recipe.from") + recipe.toResourceLocationStr(), ColorPresent.getTooltipItemDesc())
                         .build());
                 // 设置主素材按钮
@@ -764,6 +850,14 @@ public class MainFrame extends JFrame {
                 this.ruleRight.setVisible(true);
                 this.targetIcon.setVisible(true);
                 this.targetNowIcon.setVisible(true);
+                this.funcPunchButton.setVisible(true);
+                this.funcDrawButton.setVisible(true);
+                this.funcHitHeavyButton.setVisible(true);
+                this.funcHitMediumButton.setVisible(true);
+                this.funcHitLightButton.setVisible(true);
+                this.funcShrinkButton.setVisible(true);
+                this.funcUpsetButton.setVisible(true);
+                this.funcBendButton.setVisible(true);
                 this.mainFrame.revalidate();
                 this.mainFrame.repaint();
             });
@@ -785,6 +879,14 @@ public class MainFrame extends JFrame {
         this.ruleRight.setVisible(false);
         this.targetIcon.setVisible(false);
         this.targetNowIcon.setVisible(false);
+        this.funcPunchButton.setVisible(false);
+        this.funcDrawButton.setVisible(false);
+        this.funcHitHeavyButton.setVisible(false);
+        this.funcHitMediumButton.setVisible(false);
+        this.funcHitLightButton.setVisible(false);
+        this.funcShrinkButton.setVisible(false);
+        this.funcUpsetButton.setVisible(false);
+        this.funcBendButton.setVisible(false);
         this.repaint();
     }
 
@@ -903,6 +1005,8 @@ public class MainFrame extends JFrame {
                     this.outputArea.add(icon);
                 }
             }
+            this.outputArea.revalidate();
+            this.outputArea.repaint();
         }
         if (progressFeedback != null)
             progressFeedback.accept(MessageUtil.getMessage("ui.title"));
@@ -992,6 +1096,44 @@ public class MainFrame extends JFrame {
     }
 
     /**
+     * 通过模型ID寻找对应的首个材质ID
+     *
+     * @param id 模型ID
+     * @return 首个材质ID
+     */
+    private static String getFinallyIdFromModels(@NonNull String id) {
+        Map<String, List<ResourceLocation>> models = ResourceManager.getResources((n, r) ->
+                r instanceof Model && id.equals(r.toResourceLocationStr()));
+        if (models.isEmpty())
+            return null;
+        for (Map.Entry<String, List<ResourceLocation>> entry : models.entrySet()) {
+            for (ResourceLocation rl : entry.getValue()) {
+                Model model = (Model) rl;
+                if ((model.getParent() == null || !model.getParent().contains(":")) && (model.getTextures() == null || model.getTextures().isEmpty()))
+                    continue;
+                if (model.getTextures() == null || model.getTextures().isEmpty()) {
+                    return getFinallyIdFromModels(model.getParent());
+                } else {
+                    Map<String, String> textures = model.getTextures();
+                    for (Map.Entry<String, String> entry1 : textures.entrySet()) {
+                        String textureWithTypeId = entry1.getValue();
+                        if (!textureWithTypeId.contains(":")) {
+                            return textureWithTypeId;
+                        }
+                        String namespaceWithSuffix = textureWithTypeId.substring(0, textureWithTypeId.indexOf(":") + 1);
+                        String textureWithType = textureWithTypeId.substring(textureWithTypeId.indexOf(":") + 1);
+                        if (!textureWithType.contains("/") || !(textureWithType.startsWith("block/") || textureWithType.startsWith("item/"))) {
+                            return textureWithTypeId;
+                        }
+                        return namespaceWithSuffix + textureWithType.substring(textureWithType.indexOf("/") + 1);
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
      * 根据物品ID或TagID获取物品材质
      *
      * @param itemId   物品ID
@@ -1006,7 +1148,20 @@ public class MainFrame extends JFrame {
         if (itemId != null) {
             String finalItemId = itemId;
             Map<String, List<ResourceLocation>> textures = ResourceManager.getResources((n, r) ->
-                    r instanceof Texture rt && ("item".equals(rt.getTextureType()) || "block".equals(rt.getTextureType())) && finalItemId.equals(r.toResourceLocationStr()) && rt.getImg() != null);
+                    r instanceof Texture rt && ("item".equals(rt.getTextureType()) || "items".equals(rt.getTextureType()) || "block".equals(rt.getTextureType()) || "blocks".equals(rt.getTextureType())) && finalItemId.equals(r.toResourceLocationStr()) && rt.getImg() != null);
+            if (textures.isEmpty()) {
+                // 可能位于模型描述文件中，需要二次查找
+                String textureIdFromModel = getFinallyIdFromModels(itemId);
+                if (textureIdFromModel == null) {
+                    log.warn(MessageUtil.getMessage("log.func.texture.item.id.not.found.and.not.in.model", itemId, sourceId));
+                } else {
+                    textures = ResourceManager.getResources((n, r) ->
+                            r instanceof Texture rt && ("item".equals(rt.getTextureType()) || "items".equals(rt.getTextureType()) || "block".equals(rt.getTextureType()) || "blocks".equals(rt.getTextureType())) && textureIdFromModel.equals(r.toResourceLocationStr()) && rt.getImg() != null);
+                    if (textures.isEmpty()) {
+                        log.warn(MessageUtil.getMessage("log.func.texture.item.id.not.found.and.not.in.model", itemId, sourceId));
+                    }
+                }
+            }
             if (textures.isEmpty()) {
                 log.warn(MessageUtil.getMessage("log.func.texture.item.id.not.found", itemId, sourceId));
             } else {
@@ -1015,9 +1170,9 @@ public class MainFrame extends JFrame {
                     List<ResourceLocation> texturesTypeBlock = new ArrayList<>();
                     textures.values().forEach(rll -> rll.forEach(rlr -> {
                         Texture _rlr = (Texture) rlr;
-                        if ("item".equals(_rlr.getTextureType())) {
+                        if ("item".equals(_rlr.getTextureType()) || "items".equals(_rlr.getTextureType())) {
                             texturesTypeItem.add(_rlr);
-                        } else if ("block".equals(_rlr.getTextureType())) {
+                        } else if ("block".equals(_rlr.getTextureType()) || "blocks".equals(_rlr.getTextureType())) {
                             texturesTypeBlock.add(_rlr);
                         }
                     }));
@@ -1045,9 +1200,9 @@ public class MainFrame extends JFrame {
                         List<ResourceLocation> texturesTypeBlock = new ArrayList<>();
                         rll.forEach(rllr -> {
                             Texture rllr1 = (Texture) rllr;
-                            if ("item".equals(rllr1.getTextureType())) {
+                            if ("item".equals(rllr1.getTextureType()) || "items".equals(rllr1.getTextureType())) {
                                 texturesTypeItem.add(rllr1);
-                            } else if ("block".equals(rllr1.getTextureType())) {
+                            } else if ("block".equals(rllr1.getTextureType()) || "blocks".equals(rllr1.getTextureType())) {
                                 texturesTypeBlock.add(rllr1);
                             }
                         });
@@ -1277,21 +1432,21 @@ public class MainFrame extends JFrame {
     /**
      * 获取规则显示文本
      *
-     * @param ruleName 规则名称
+     * @param ruleKeyOrStepId 规则名称
      * @return 显示文本
      */
-    private static List<TooltipColorUtil.TooltipColor> getRuleTooltip(String ruleName) {
-        AnvilFuncStep anvilFuncStep = AnvilFuncStep.findById(ruleName);
+    private static List<TooltipColorUtil.TooltipColor> getRuleTooltip(String ruleKeyOrStepId) {
+        AnvilFuncStep anvilFuncStep = AnvilFuncStep.findById(ruleKeyOrStepId);
         TooltipColorUtil.Builder builder = TooltipColorUtil.builder();
         if (anvilFuncStep == null) {
             // 必须包含step和order
-            String[] s = ruleName.split("_");
+            String[] s = ruleKeyOrStepId.split("_");
             if (s.length < 2) {
-                log.warn(MessageUtil.getMessage("log.func.rule.wrong.string.format", ruleName));
+                log.warn(MessageUtil.getMessage("log.func.rule.wrong.string.format", ruleKeyOrStepId));
             }
-            anvilFuncStep = AnvilFuncStep.findByKey(ruleName);
+            anvilFuncStep = AnvilFuncStep.findByKey(ruleKeyOrStepId);
             if (anvilFuncStep == null) {
-                log.warn(MessageUtil.getMessage("log.func.rule.wrong.step", ruleName));
+                log.warn(MessageUtil.getMessage("log.func.rule.wrong.step", ruleKeyOrStepId));
             } else {
                 switch (anvilFuncStep) {
                     case HIT -> builder.withText(getLocaleText("tfc.enum.forgestep.hit"), ColorPresent.getTooltipItemName());
@@ -1305,9 +1460,9 @@ public class MainFrame extends JFrame {
                     case SHRINK -> builder.withText(getLocaleText("tfc.enum.forgestep.shrink"), ColorPresent.getTooltipItemName());
                 }
             }
-            String order = AnvilFuncStep.takeOrderFromKey(ruleName);
+            String order = AnvilFuncStep.takeOrderFromKey(ruleKeyOrStepId);
             if (order == null) {
-                log.warn(MessageUtil.getMessage("log.func.rule.wrong.order", ruleName));
+                log.warn(MessageUtil.getMessage("log.func.rule.wrong.order", ruleKeyOrStepId));
             } else {
                 switch (order) {
                     case "any" -> builder.withText(" " + getLocaleText("tfc.enum.order.any"), ColorPresent.getTooltipItemName());
@@ -1534,6 +1689,35 @@ public class MainFrame extends JFrame {
         return TooltipColorUtil.builder()
                 .withText(MessageUtil.getMessage(key), ColorPresent.getTooltipItemName())
                 .build();
+    }
+
+    /**
+     * 功能区操作按钮，操作targetNow
+     */
+    private class FuncAction implements ActionListener {
+        private final AnvilFuncStep func;
+        private final Consumer<String> progressFeedback;
+        public FuncAction(AnvilFuncStep func, Consumer<String> progressFeedback) {
+            if (func == AnvilFuncStep.HIT) {
+                throw new IllegalArgumentException(MessageUtil.getMessage("log.load.function.register.hit"));
+            }
+            this.func = func;
+            this.progressFeedback = progressFeedback;
+        }
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            String nowText = targetNowInput.getText();
+            int now = 0;
+            try {
+                now = Math.max(Math.min(Integer.parseInt(nowText), 145), 0);
+            } catch (NumberFormatException ignored) {}
+            if (now + func.getVal() > 145 || now + func.getVal() < 0) {
+                return;
+            }
+            now += func.getVal();
+            targetNowInput.setText(String.valueOf(now));
+            calcResults(progressFeedback);
+        }
     }
 
 }

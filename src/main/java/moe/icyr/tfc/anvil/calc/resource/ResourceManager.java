@@ -119,7 +119,11 @@ public class ResourceManager {
                 log.debug(MessageUtil.getMessage("log.load.resource.lang.loaded", resourceLocation.getOriginalPath(), successCounter, langSets.getStorage().size()));
             } else {
                 pool.add(resourceLocation);
-                log.debug(MessageUtil.getMessage("log.load.resource.loaded", resourceLocation.toResourceLocationStr(), resourceLocation.getOriginalPath()));
+                if (resourceLocation instanceof Texture) {
+                    log.debug(MessageUtil.getMessage("log.load.resource.texture.loaded", resourceLocation.toResourceLocationStr(), resourceLocation.getOriginalPath()));
+                } else {
+                    log.debug(MessageUtil.getMessage("log.load.resource.loaded", resourceLocation.toResourceLocationStr(), resourceLocation.getOriginalPath()));
+                }
             }
             return true;
         } else {
@@ -150,8 +154,13 @@ public class ResourceManager {
                 return true;
             } else {
                 boolean success = null == POOL.putIfAbsent(resourceLocation.getNamespace(), new CopyOnWriteArrayList<>(List.of(resourceLocation)));
-                if (success)
-                    log.debug(MessageUtil.getMessage("log.load.resource.loaded", resourceLocation.toResourceLocationStr(), resourceLocation.getOriginalPath()));
+                if (success) {
+                    if (resourceLocation instanceof Texture) {
+                        log.debug(MessageUtil.getMessage("log.load.resource.texture.loaded", resourceLocation.toResourceLocationStr(), resourceLocation.getOriginalPath()));
+                    } else {
+                        log.debug(MessageUtil.getMessage("log.load.resource.loaded", resourceLocation.toResourceLocationStr(), resourceLocation.getOriginalPath()));
+                    }
+                }
                 return success;
             }
         }

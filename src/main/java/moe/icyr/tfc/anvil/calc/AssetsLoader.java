@@ -1,6 +1,7 @@
 package moe.icyr.tfc.anvil.calc;
 
 import lombok.extern.slf4j.Slf4j;
+import moe.icyr.tfc.anvil.calc.exception.SkipNotUsingResourceLoaded;
 import moe.icyr.tfc.anvil.calc.resource.ResourceLocation;
 import moe.icyr.tfc.anvil.calc.resource.ResourceManager;
 import moe.icyr.tfc.anvil.calc.util.AssetsUtil;
@@ -26,7 +27,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public class AssetsLoader {
 
-    private static final Pattern otherModsLoadPattern = Pattern.compile("^(assets/.*?/lang/.*|assets/.*?/textures/(item|block)/.*|data/.*?/recipes/.*|data/.*?/tags/.*)$");
+    private static final Pattern otherModsLoadPattern = Pattern.compile("^(?:assets/.*?/lang/.*|assets/tfc/textures/gui/anvil\\.png|assets/.*?/models/(?:item|block)/.*|assets/.*?/textures/(?:item|items|block|blocks)/.*|data/.*?/recipes/anvil/.*|data/.*?/tags/(?:blocks|items)/.*)$");
 
     /**
      * 加载mod文件内资源
@@ -79,21 +80,22 @@ public class AssetsLoader {
                         if (modId != null && !modId.isBlank() && displayName != null && !displayName.isBlank()) {
                             ResourceManager.putModDisplayNameWithModId(modId, displayName);
                         }
-                        if ("tfc".equals(modId)) {
-                            // 群峦本体
-                            loadMods(mod, name ->
-                                    name.startsWith("assets/tfc/textures/gui/") ||
-                                            name.startsWith("assets/tfc/lang/") ||
-                                            name.startsWith("assets/tfc/textures/item/") ||
-                                            name.startsWith("assets/tfc/textures/block/") ||
-                                            name.startsWith("data/tfc/recipes/anvil/") ||
-                                            name.startsWith("data/tfc/tags/") ||
-                                            name.startsWith("data/forge/tags/"),
-                                    progressFeedback);
-                        } else {
-                            // 其他mod
-                            loadMods(mod, name -> otherModsLoadPattern.matcher(name).matches(), progressFeedback);
-                        }
+                        loadMods(mod, name -> otherModsLoadPattern.matcher(name).matches(), progressFeedback);
+//                        if ("tfc".equals(modId)) {
+//                            // 群峦本体
+//                            loadMods(mod, name ->
+//                                    name.startsWith("assets/tfc/textures/gui/") ||
+//                                            name.startsWith("assets/tfc/lang/") ||
+//                                            name.startsWith("assets/tfc/textures/item/") ||
+//                                            name.startsWith("assets/tfc/textures/block/") ||
+//                                            name.startsWith("data/tfc/recipes/anvil/") ||
+//                                            name.startsWith("data/tfc/tags/") ||
+//                                            name.startsWith("data/forge/tags/"),
+//                                    progressFeedback);
+//                        } else {
+//                            // 其他mod
+//                            loadMods(mod, name -> otherModsLoadPattern.matcher(name).matches(), progressFeedback);
+//                        }
                     }
                 }
             }
@@ -119,6 +121,9 @@ public class AssetsLoader {
             ResourceLocation resourceLocation;
             try {
                 resourceLocation = AssetsUtil.readResourceFromData(mod.getName(), entry.getKey(), entry.getValue());
+            } catch (SkipNotUsingResourceLoaded e) {
+                log.warn(e.getMessage());
+                continue;
             } catch (Exception e) {
                 log.error(MessageUtil.getMessage("log.load.mod.resource.error"), e);
                 continue;

@@ -92,30 +92,33 @@ public class Config {
     private Integer anvilAssetUIDrawY = 224;
     private Integer anvilAssetUIDrawWidth = 32;
     private Integer anvilAssetUIDrawHeight = 32;
-    /* 素材UI冲压按钮位置(16x16) */
+    /* 素材UI冲压按钮位置 */
     private Integer anvilAssetUITechPunchX = 89;
     private Integer anvilAssetUITechPunchY = 50;
-    /* 素材UI弯曲按钮位置(16x16) */
+    /* 素材UI弯曲按钮位置 */
     private Integer anvilAssetUITechBendX = 107;
     private Integer anvilAssetUITechBendY = 50;
-    /* 素材UI镦锻按钮位置(16x16) */
+    /* 素材UI镦锻按钮位置 */
     private Integer anvilAssetUITechUpsetX = 89;
     private Integer anvilAssetUITechUpsetY = 68;
-    /* 素材UI收缩按钮位置(16x16) */
+    /* 素材UI收缩按钮位置 */
     private Integer anvilAssetUITechShrinkX = 107;
     private Integer anvilAssetUITechShrinkY = 68;
-    /* 素材UI轻击按钮位置(16x16) */
+    /* 素材UI轻击按钮位置 */
     private Integer anvilAssetUITechHitLightX = 53;
     private Integer anvilAssetUITechHitLightY = 50;
-    /* 素材UI击打按钮位置(16x16) */
+    /* 素材UI击打按钮位置 */
     private Integer anvilAssetUITechHitMediumX = 71;
     private Integer anvilAssetUITechHitMediumY = 50;
-    /* 素材UI重击按钮位置(16x16) */
+    /* 素材UI重击按钮位置 */
     private Integer anvilAssetUITechHitHeavyX = 53;
     private Integer anvilAssetUITechHitHeavyY = 68;
-    /* 素材UI牵拉按钮位置(16x16) */
+    /* 素材UI牵拉按钮位置 */
     private Integer anvilAssetUITechDrawX = 71;
     private Integer anvilAssetUITechDrawY = 68;
+    /* 素材UI功能按钮大小 */
+    private Integer anvilAssetUITechWidth = 16;
+    private Integer anvilAssetUITechHeight = 16;
     /* UI配方框架颜色 */
     private Integer anvilAssetUIRecipeFrameColorRSrc = 216;
     private Integer anvilAssetUIRecipeFrameColorGSrc = 216;

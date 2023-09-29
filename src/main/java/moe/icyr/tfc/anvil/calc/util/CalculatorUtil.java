@@ -32,12 +32,51 @@ public class CalculatorUtil {
         Tree root = new Tree(null);
         calcInternal(targetNow, target, root, func.length - 1);
         Tree shorterPath = root.getShorterEndLeaf();
-        List<Integer> funcList = new ArrayList<>();
-        do {
-            funcList.add(0, shorterPath.getFunc());
-            shorterPath = shorterPath.getParent();
-        } while (shorterPath.getParent() != null);
-        return funcList.toArray(new Integer[0]);
+        if (shorterPath.getParent() == null && shorterPath.getFunc() == null) {
+            return new Integer[0];
+        } else {
+//            log.info(root.toString());
+//            // 先移除操作会超出边际的脏数据，再计算一次最短路径
+//            List<Tree> endLeafs = root.getEndLeaf();
+//            while (true) {
+//                boolean clear = true;
+//                for (Tree endLeaf : endLeafs) {
+//                    boolean dirty = false;
+//                    int value = target;
+//                    Tree nowNode = endLeaf;
+//                    Tree bifurcation = endLeaf.getParent();
+//                    Tree bifurcationRemove = endLeaf;
+//                    while (nowNode.getParent() != null) {
+//                        value -= nowNode.getFunc();
+//                        if (value > 145 || value < 0) {
+//                            dirty = true;
+//                        }
+//                        if (nowNode.getParent().getChildren().size() > 1) {
+//                            bifurcation = nowNode.getParent();
+//                            bifurcationRemove = nowNode;
+//                        }
+//                        nowNode = nowNode.getParent();
+//                    }
+//                    if (dirty) {
+//                        bifurcation.getChildren().remove(bifurcationRemove);
+//                        clear = false;
+//                        break;
+//                    }
+//                }
+//                if (clear)
+//                    break;
+//                else
+//                    endLeafs = root.getEndLeaf();
+//            }
+//            log.info(root.toString());
+//            shorterPath = root.getShorterEndLeaf();
+            List<Integer> funcList = new ArrayList<>();
+            do {
+                funcList.add(0, shorterPath.getFunc());
+                shorterPath = shorterPath.getParent();
+            } while (shorterPath != null && shorterPath.getParent() != null);
+            return funcList.toArray(new Integer[0]);
+        }
     }
 
     /**
