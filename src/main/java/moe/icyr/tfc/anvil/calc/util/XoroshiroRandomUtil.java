@@ -91,7 +91,6 @@ public class XoroshiroRandomUtil {
                     j = i * (long) p_190118_;
                 }
             }
-
             long i1 = j >> 32;
             return (int) i1;
         }

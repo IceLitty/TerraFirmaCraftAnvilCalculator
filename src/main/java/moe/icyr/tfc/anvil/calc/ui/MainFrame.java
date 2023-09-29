@@ -289,9 +289,6 @@ public class MainFrame extends JFrame {
             public void focusLost(FocusEvent e) {
                 String target = targetInput.getText();
                 if (target != null && !target.isBlank() && !target.equals(textGet)) {
-                    if (seedInput.getText() != null && !seedInput.getText().isBlank() && !buttonScroll.getNowChooseRecipes().isEmpty()) {
-                        // TODO 提前统计全部配方的MD5，然后根据固定逆向顺序将target还原成map seed
-                    }
                     calcResults(progressFeedback);
                 }
             }
