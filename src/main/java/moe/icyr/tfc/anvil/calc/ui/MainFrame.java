@@ -426,6 +426,7 @@ public class MainFrame extends JFrame {
         outputArea.setSize(new Dimension((ConfigUtil.INSTANCE.getAnvilAssetUIBackpackWidth() - 2) * ConfigUtil.INSTANCE.getScaleUI(),
                 (ConfigUtil.INSTANCE.getAnvilAssetUIBackpackHeight() - 2) * ConfigUtil.INSTANCE.getScaleUI()));
         outputArea.setLayout(new FlowLayout(FlowLayout.LEADING, 5, 5));
+        // TODO 换成TextPane后滚动组件不能如预期工作
         this.outputScrollPane = new JScrollPane(outputArea, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         outputScrollPane.setOpaque(false);
         outputScrollPane.getViewport().setOpaque(false);
@@ -946,9 +947,13 @@ public class MainFrame extends JFrame {
                 }
             }
             if (resultL.isEmpty()) {
-                JLabel tips = new JLabel();
-                log.warn(MessageUtil.getMessage("ui.output.error", targetNow, target, rules));
-                this.outputArea.add(tips);
+                String message = MessageUtil.getMessage("ui.output.error", targetNow, target, rules);
+                log.warn(message);
+                this.outputArea.setText(message);
+//                JLabel tips = new JLabel();
+//                tips.setText(MessageUtil.getMessage("ui.output.error", targetNow, target, rules));
+//                tips.setForeground(outputArea.getCaretColor());
+//                this.outputArea.add(tips);
             } else {
                 List<Integer> result = null;
                 for (List<Integer> r : resultL) {
@@ -960,6 +965,7 @@ public class MainFrame extends JFrame {
                 }
                 JLabel tips = new JLabel();
                 tips.setText(MessageUtil.getMessage("ui.output.message"));
+                tips.setForeground(outputArea.getCaretColor());
                 this.outputArea.add(tips);
                 BufferedImage asset = getTfcAnvilAsset();
                 if (asset == null)
