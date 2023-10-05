@@ -662,7 +662,7 @@ public class MainFrame extends JFrame {
             String resultItemName = getItemDisplayName(recipe.getResult().gotItemId(), null, recipe.toResourceLocationStr());
             String inputMainItemName = getItemDisplayName(recipe.getInput().getItem(), recipe.getInput().getTag(), recipe.toResourceLocationStr());
             String inputOffItemName = "";
-            boolean canShowRecipeInTooltip = !inputMainItemName.isBlank() || !inputOffItemName.isBlank() || !resultItemName.isBlank();
+            boolean canShowRecipeInTooltip = !inputMainItemName.isBlank() && !inputOffItemName.isBlank() && !resultItemName.isBlank();
             if (canShowRecipeInTooltip) {
                 fullRecipeDescBuilder.withNewLine();
             }
@@ -684,6 +684,7 @@ public class MainFrame extends JFrame {
                 fullRecipeDesc = fullRecipeDescBuilder.build();
             } else {
                 fullRecipeDesc = null;
+                fullRecipeDescStringBuilder.setLength(0);
             }
             // 获取材质写入缓存
             RecipeAnvil.Textureable textureable;
@@ -755,7 +756,7 @@ public class MainFrame extends JFrame {
                         .withText(resultItemName, ColorPresent.getTooltipItemName())
                         .withNewLine().withText(resultItemId, ColorPresent.getTooltipItemDesc())
                         .withNewLine().withText(MessageUtil.getMessage("ui.tooltip.mod.is"), ColorPresent.getTooltipItemDesc()).withText(ResourceManager.getModDisplayNameByModId(resultItemId.split(":")[0]), ColorPresent.getTooltipModId(), false, true)
-                        .withText(fullRecipeDescStringBuilder.isEmpty() ? null : "\n" + fullRecipeDescStringBuilder.toString(), ColorPresent.getTooltipItemDesc())
+                        .withText(fullRecipeDescStringBuilder.isEmpty() ? null : "\n" + fullRecipeDescStringBuilder, ColorPresent.getTooltipItemDesc())
                         .withNewLine().withText(MessageUtil.getMessage("ui.tooltip.recipe.from") + recipe.toResourceLocationStr(), ColorPresent.getTooltipItemDesc())
                         .build());
                 // 设置主素材按钮
