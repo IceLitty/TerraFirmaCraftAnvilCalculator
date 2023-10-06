@@ -60,6 +60,8 @@ public class MainFrame extends JFrame {
     /**
      * 程序主面板
      * 若不考虑rules，则计算逻辑具有边际问题，如0-145的范围中，会产生执行操作数后小于0或大于145的情况，但由于有rules限制最后几位操作数，故而导致不可能在极大的目标值时指定减小操作，或极小目标值指定增大操作，一定程度上避免了边际问题
+     * TODO 分析二次加载配方选单的耗时原因
+     * TODO 程序首次打开时，先选择原料配方时，结果物品的图标无法加载
      */
     public MainFrame() throws HeadlessException {
         this.mainFrame = this;
