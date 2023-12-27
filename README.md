@@ -32,10 +32,11 @@ minecraft客户端一般位于`%appdata%\.minecraft\versions\1.18.2\1.18.2.jar`<
 > If you are not using English as your primary language, then you need to put the Minecraft localized file into the Minecraft client jar.<br>
 Open assets index file like in `%appdata%\.minecraft\assets\indexes\1.18.json`,<br>
 you can find language JSON like `minecraft/lang/zh_cn.json` and it hash is `9fabbc798786c7b7364902b31bdb37c2c037e9b8`.<br>
+Then find file in `%appdata%\.minecraft\assets\objects\<two char starts at hash text>\<hash>`<br>
 Copy it in client jar `1.18.2.jar\assets\minecraft\lang\zh_cn.json`.
 
 若缺失模组材质，或缺失模组显示命名的时候在选择合成配方时只会发生如下情况（无法显示材质/无法显示物品名称）仍然可以正常选择配方并计算：<br>
-If missing mod item texture or missing localized display name will show as this: (still can correctly calculator)<br>
+If missing mod item texture or missing localized display name will show as this: (still can correctly calculate)<br>
 ![missingTextureOrDisplayName](https://github.com/IceLitty/TerraFirmaCraftAnvilCalculator/assets/6522057/3e1c94bb-542a-4975-b273-bad04f7528cc)
 
 任意操作如选择配方、修改地图种子、修改当前值、修改目标值均会触发自动计算，只要目标值与配方都存在，计算就会进行。<br>
